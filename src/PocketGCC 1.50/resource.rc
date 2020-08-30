@@ -1,0 +1,67 @@
+#include <windows.h>
+
+//
+// Version Information
+//
+
+1 VERSIONINFO
+FILEVERSION     2, 0, 0, 0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "Comments",         "This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\0"
+            VALUE "FileDescription",  "Prime Factorization Software\0"
+            VALUE "FileVersion",      "2 beta\0"
+            VALUE "InternalName",     "Prime Factorization\0"
+            VALUE "LegalCopyright",   "Copyright (C) 2018-2020 watamario All rights reserved.\0"
+            VALUE "ProductName",      "Prime Factorization for SHARP Brain\0"
+            VALUE "ProductVersion",   "2 beta\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
+
+
+//
+// Icon
+//
+
+100 ICON "app.ico"
+
+
+//
+// Menu
+//
+
+1001 MENU
+{
+    POPUP "&File"
+    {
+        MENUITEM "&Save As...", 2001
+        MENUITEM "&Copy to Clipboard", 2002
+        MENUITEM "E&xit", 2009
+    }
+    POPUP "&Options"
+    {
+        MENUITEM "Prime &Factorization", 2051
+        MENUITEM "&List/Count Prime Numbers", 2052
+        MENUITEM SEPARATOR
+        MENUITEM "Display only &number of prime numbers", 2060, GRAYED
+        MENUITEM "Output to a &text file", 2061, GRAYED
+        MENUITEM "Over&write a existing file", 2062, GRAYED
+    }
+    POPUP "Help(&H)"
+    {
+        MENUITEM "How to &use", 2101
+        MENUITEM "&About this software", 2109
+    }
+}

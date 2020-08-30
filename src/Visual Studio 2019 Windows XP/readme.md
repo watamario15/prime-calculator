@@ -23,6 +23,3 @@ Windows PC用のソースコードです。
 ソースコードは、**firsttest**フォルダの**1.cpp**です。
 
 実行可能バイナリは、x86(32bit)は**Win32**、x86(64bit)は**x64**、ARM(32bit)版は**ARM**、ARM(64bit)版は**ARM64**フォルダ内の、**Debug**フォルダにデバッグビルドが、**Release**フォルダにリリースビルドが **PF_(対象CPUアーキテクチャ名).exe** として生成されます。
-
-
-製作者: watamario otwthutu15@gmail.com

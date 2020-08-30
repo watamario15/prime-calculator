@@ -1,12 +1,12 @@
-# �f���������v���O���� Ver. 2�� Borland C++ Compiler 5.5�Ń\�[�X�R�[�h
-Windows PC�p�̃\�[�X�R�[�h�ł��B
+# 素因数分解プログラム Ver. 2β Borland C++ Compiler 5.5版ソースコード
+Windows PC用のソースコードです。
 
-# �r���h���̗v��
-���̃v���W�F�N�g�́A**BCC Developer**�ō쐬����Ă��܂��B�܂��A����҂̓R���p�C���Ƃ���**Borland C++ Compiler 5.5**���g�p���Ă��܂��B
+# ビルド時の要件
+このプロジェクトは、**BCC Developer**で作成されています。また、製作者はコンパイラとして**Borland C++ Compiler 5.5**を使用しています。
 
-�Ȃ��A���̃R���p�C���͒��Â��̂�Windows XP�ɂ����ʂɑΉ����Ă��鑼�A64bit�v���O�����̃r���h�͍s���܂���B
+なお、このコンパイラは超古いのでWindows XPにも普通に対応している他、64bitプログラムのビルドは行えません。
 
-# ����
-�\�[�X�R�[�h�́A���̃t�@�C���Ɠ��K�w�ɂ���**1.cpp**�ł��B
+# 注釈
+ソースコードは、このファイルと同階層にある**1.cpp**です。
 
-���s�\�o�C�i���́A�f�o�b�O�r���h��**Debug**�t�H���_�A�����[�X�r���h��**Release**�t�H���_��**PF_IA-32(OlderWindows).exe**�Ƃ��Đ�������܂��B
+実行可能バイナリは、デバッグビルドは**Debug**フォルダ、リリースビルドは**Release**フォルダに**PF_IA-32(OlderWindows).exe**として生成されます。

@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2β Borland C++ Compiler 5.5版ソースコード
+# 素因数分解プログラム Ver. 2β BCC Developer版ソースコード
 Windows PC用のソースコードです。
 
 # ビルド時の要件

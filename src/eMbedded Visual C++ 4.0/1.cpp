@@ -43,7 +43,7 @@
 #define TIMER_AWAIT 256
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
 
-HWND hwnd, hbtn_ok, hbtn_term, hbtn_clr, hbtn_0, hbtn_1, hbtn_2, hbtn_3, hbtn_4, hbtn_5, hbtn_6, hbtn_7, hbtn_8, hbtn_9, hbtn_CE, hbtn_BS, hedi0, hedi1, hedi2, hedi_out, hCmdBar, hwnd_temp, hwnd_focused;
+HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hbtn_0, hbtn_1, hbtn_2, hbtn_3, hbtn_4, hbtn_5, hbtn_6, hbtn_7, hbtn_8, hbtn_9, hbtn_CE, hbtn_BS, hedi0, hedi1, hedi2, hedi_out, hCmdBar, hwnd_temp, hwnd_focused;
 HINSTANCE hInst; // Instance Handle のバックアップ
 HMENU hmenu;
 MENUITEMINFO mii;
@@ -85,7 +85,7 @@ void FinalizeErrorLPN(){
     EnableWindow(hedi0, TRUE);
     EnableWindow(hedi1, TRUE);
     if(!onlycnt)EnableWindow(hedi2, TRUE);
-    EnableWindow(hbtn_term, FALSE);
+    EnableWindow(hbtn_abort, FALSE);
     EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     SetWindowText(hwnd, wcmes[0]);
@@ -128,7 +128,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
         TEXT("\n\n(C) 2018-2020 watamario")
     );
 
-    // "help" statement for Prime Factorization
+    // "how to use" statement for Prime Factorization
     wcscpy(wcmes[2], TEXT("入力された自然数を素因数分解します。素数判定にも利用できます。\n")
         TEXT("上の入力ボックスに自然数を入力し、OKボタンまたはEnter(決定)で処理を開始します。\n")
         TEXT("巨大な素因数を持つ自然数を処理するのには時間がかかります。あまりに長く、待てない場合は中断ボタンで中断できます。\n")
@@ -136,7 +136,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
         TEXT("上のメニューバーのオプションから、素数列挙・数え上げの機能に切り替えられます。\n")
     );
 
-    // "help" statement for List Prime Numbers and Counting
+    // "how to use" statement for List Prime Numbers and Counting
     wcscpy(wcmes[3], TEXT("入力された範囲で素数の列挙、数え上げを行います。\n")
         TEXT("上の各入力ボックスに自然数を入力し、OKボタンまたはEnterで処理を開始します。\n")
         TEXT("空白または0を入力すると、無制限として扱われます。\n")
@@ -175,7 +175,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
         hInstance,
         NULL);
 
-    hbtn_term = CreateWindowEx( // terminate button
+    hbtn_abort = CreateWindowEx( // abort button
         0,
         TEXT("BUTTON"),
         TEXT("中断"),
@@ -425,7 +425,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                TEXT("EDIT"),
                NULL,
                WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_AUTOHSCROLL | ES_NUMBER,
-               64,  // x
+               64, // x
                0, // y
                256, // x長さ
                32, // y長さ
@@ -454,7 +454,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
 
         case WM_CLOSE: // called when closing
-            KillTimer(hWnd,1); // stop the timer
+            KillTimer(hWnd, 1); // stop the timer
             quitting=true;
             if(IDYES == MessageBox(hWnd, TEXT("本当に終了しますか？"), TEXT("プログラムの終了"), MB_YESNO | MB_ICONINFORMATION)) {
                 DestroyWindow(hWnd);
@@ -476,7 +476,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
                 
         case WM_SIZE: // when the window size is changed
-            GetClientRect(hwnd, &rect);
+            GetClientRect(hWnd, &rect);
             scrx=rect.right; scry=rect.bottom-CmdBar_Height; // Command Barの幅だけ引く
 
             // create a font for the main window
@@ -545,7 +545,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
             // apply newly created fonts to objects
             SendMessage(hbtn_ok, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_term, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+            SendMessage(hbtn_abort, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
             SendMessage(hbtn_clr, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
             SendMessage(hbtn_0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
             SendMessage(hbtn_1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
@@ -573,7 +573,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             if(!mode){
                 MoveWindow(hedi0, btnsize[0], CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
                 MoveWindow(hbtn_ok, btnsize[0]*5, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_term, btnsize[0]*6, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+                MoveWindow(hbtn_abort, btnsize[0]*6, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
                 MoveWindow(hbtn_clr, btnsize[0]*7, CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
                 MoveWindow(hedi_out, scrx/20, scry*3/9+CmdBar_Height, scrx*9/10, scry*6/10, TRUE);
                 nbpos[0]=scrx/20; nbpos[1]=scry/3-btnsize[3]+CmdBar_Height;
@@ -582,7 +582,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 MoveWindow(hedi1, btnsize[0]*6, CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
                 MoveWindow(hedi2, btnsize[0], btnsize[1]+CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
                 MoveWindow(hbtn_ok, btnsize[0]*3, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_term, btnsize[0]*4, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+                MoveWindow(hbtn_abort, btnsize[0]*4, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
                 MoveWindow(hbtn_clr, btnsize[0]*5, btnsize[1]+CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
                 MoveWindow(hedi_out, scrx/20, scry*4/9+CmdBar_Height, scrx*9/10, scry/2, TRUE);
                 nbpos[0]=scrx/20; nbpos[1]=scry*4/9-btnsize[3]+CmdBar_Height;
@@ -611,11 +611,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             nbpos[0]+=btnsize[2];
             MoveWindow(hbtn_CE, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
 
-            hBitmap=CreateCompatibleBitmap(hdc=GetDC(hwnd), scrx, scry);
-            ReleaseDC(hwnd, hdc);
+            hBitmap=CreateCompatibleBitmap(hdc=GetDC(hWnd), scrx, scry);
+            ReleaseDC(hWnd, hdc);
             SelectObject(hMemDC, hBitmap); // update the memory device context in new size
             DeleteObject(hBitmap);
-            InvalidateRect(hwnd, NULL, FALSE);
+            InvalidateRect(hWnd, NULL, FALSE);
             break;
 
         case WM_ACTIVATE:
@@ -628,12 +628,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 case 0: // OK button
                     if (working) break;
                     working = true;
-                    KillTimer(hwnd, 1);
+                    KillTimer(hWnd, 1);
                     EnableWindow(hbtn_ok, FALSE);
                     EnableWindow(hedi0, FALSE);
                     EnableWindow(hedi1, FALSE);
                     EnableWindow(hedi2, FALSE);
-                    EnableWindow(hbtn_term, TRUE);
+                    EnableWindow(hbtn_abort, TRUE);
                     EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
 
@@ -645,15 +645,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)wctemp);
                         num[2]=_wtoi64(wctemp);
                     }
-                    SetWindowText(hwnd, TEXT("計算中...しばらくお待ち下さい..."));
-                    InvalidateRect(hwnd, NULL, FALSE);
+                    SetWindowText(hWnd, TEXT("計算中...しばらくお待ち下さい..."));
+                    InvalidateRect(hWnd, NULL, FALSE);
 
                     if(!mode) hThread = CreateThread(NULL, 0, PrimeFactorization, NULL, 0, &dThreadID);
                     else hThread = CreateThread(NULL, 0, ListPrimeNumbers, NULL, 0, &dThreadID);
                     SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
                     break;
 
-                case 1: // terminate button
+                case 1: // abort
                     threadcancelled = true;
                     break;
 
@@ -697,7 +697,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     if(WriteFile(hFile, cEdit, strlen(cEdit)*sizeof(CHAR), NULL, NULL)){
                         MessageBox(hWnd, TEXT("出力ボックスの内容をテキストファイルに書き出しました。"), TEXT("情報"), MB_OK | MB_ICONINFORMATION);
                     }else{
-                        MessageBox(hwnd, TEXT("出力ファイルへの書き込みに失敗しました。\n別のパスで再試行してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
+                        MessageBox(hWnd, TEXT("出力ファイルへの書き込みに失敗しました。\n別のパスで再試行してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
                     }
                     CloseHandle(hFile);
                     break;
@@ -713,7 +713,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SendMessage(hWnd, WM_CLOSE, 0, 0);
                     break;
 
-                case 2101: // "help" menu in the menubar
+                case 2101: // "how to use" menu in the menubar
                     KillTimer(hWnd, 1);
                     quitting=true;
                     MessageBox(hWnd, wcmes[(mode ? 3 : 2)], TEXT("使い方"), MB_OK | MB_ICONINFORMATION);
@@ -752,7 +752,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     DestroyWindow(hedi1); // mode1で追加されたエディットボックスを削除
                     DestroyWindow(hedi2); // mode1で追加されたエディットボックスを削除
                     mode = 0;
-                    SendMessage(hwnd, WM_SIZE, 0, 0);
+                    SendMessage(hWnd, WM_SIZE, 0, 0);
                     break;
 
                 case 2052: // "List/Count Prime Numbers" menu in the menubar
@@ -791,7 +791,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         hInst,
                         NULL);
                     SendMessage(hedi2, EM_SETLIMITTEXT, (WPARAM)19, 0);
-                    SendMessage(hwnd, WM_SIZE, 0, 0);
+                    SendMessage(hWnd, WM_SIZE, 0, 0);
                     wpedi2_old=(WNDPROC)SetWindowLong(hedi2, GWL_WNDPROC, (DWORD)Edit2WindowProc); // Window Procedure のすり替え
                     break;
 
@@ -845,7 +845,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 _itow(LOWORD(wParam)-10, wctemp, 10);
                 SendMessage(hwnd_focused, EM_REPLACESEL, 0, (WPARAM)wctemp);
             }
-            if(LOWORD(wParam)<50) SetFocus(hwnd_focused); // set focus on input box if the clicked control isn't a edit box 
+            if(LOWORD(wParam)<50) SetFocus(hwnd_focused); // set focus on input box if the clicked control isn't a edit box
             else return DefWindowProc(hWnd, uMsg, wParam, lParam);
             break;
 
@@ -863,6 +863,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     }
     return 0;
 }
+
 // custom window procedure for the input box
 LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     switch(uMsg){
@@ -881,7 +882,7 @@ LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableWindow(hedi0, FALSE);
                         EnableWindow(hedi1, FALSE);
                         EnableWindow(hedi2, FALSE);
-                        EnableWindow(hbtn_term, TRUE);
+                        EnableWindow(hbtn_abort, TRUE);
                         EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
 
@@ -1002,7 +1003,7 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableWindow(hedi0, FALSE);
                         EnableWindow(hedi1, FALSE);
                         EnableWindow(hedi2, FALSE);
-                        EnableWindow(hbtn_term, TRUE);
+                        EnableWindow(hbtn_abort, TRUE);
                         EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
 
@@ -1171,7 +1172,7 @@ DWORD WINAPI PrimeFactorization(LPVOID arg) {
         working = false;
         EnableWindow(hbtn_ok, TRUE);
         EnableWindow(hedi0, TRUE);
-        EnableWindow(hbtn_term, FALSE);
+        EnableWindow(hbtn_abort, FALSE);
         EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
         InvalidateRect(hwnd, NULL, FALSE);
@@ -1213,7 +1214,7 @@ DWORD WINAPI PrimeFactorization(LPVOID arg) {
         working = false;
         EnableWindow(hbtn_ok, TRUE);
         EnableWindow(hedi0, TRUE);
-        EnableWindow(hbtn_term, FALSE);
+        EnableWindow(hbtn_abort, FALSE);
         EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
         SetWindowText(hwnd, wcmes[0]);
@@ -1235,7 +1236,7 @@ DWORD WINAPI PrimeFactorization(LPVOID arg) {
     working = false;
     EnableWindow(hbtn_ok, TRUE);
     EnableWindow(hedi0, TRUE);
-    EnableWindow(hbtn_term, FALSE);
+    EnableWindow(hbtn_abort, FALSE);
     EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);
@@ -1396,7 +1397,7 @@ DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
     EnableWindow(hedi0, TRUE);
     EnableWindow(hedi1, TRUE);
     if(!onlycnt) EnableWindow(hedi2, TRUE);
-    EnableWindow(hbtn_term, FALSE);
+    EnableWindow(hbtn_abort, FALSE);
     EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);

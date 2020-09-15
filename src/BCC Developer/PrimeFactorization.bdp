@@ -1,0 +1,67 @@
+[Project]
+Version=1.2.21
+Count=1
+Filename1=1.cpp,1,PrimeFactorization.bdp,1,1.cpp
+
+[Compile]
+ResourceName=resource.rc
+RunParam=
+Count=2
+Current=1
+
+[Compile1]
+DefName=Debug
+ExeName=PF_IA-32(OlderWindows).exe
+MakeName=PF_IA-32(OlderWindows).mak
+NoMakefile=0
+UseMakefileEx=0
+Target=-W
+TargetSub=
+InstructionSet=-3
+Optimize=-Od
+Warnning=-w
+Debug=-v -y
+Compiler=-k -b
+PreHeader=-H-
+Call=-pc
+Language=-AT
+Option=-WU
+IncludePath=
+LibraryFile=
+Define=DEBUG
+ResIncludePath="C:\Program Files (x86)\bcc\borland\bcc55\Include"
+OutputDir=Debug
+MakeBefore=
+MakeAfter=
+
+[Compile2]
+DefName=Release
+ExeName=PF_IA-32(OlderWindows).exe
+MakeName=PF_IA-32(OlderWindows).mak
+NoMakefile=0
+UseMakefileEx=0
+Target=-W
+TargetSub=
+InstructionSet=-3
+Optimize=-O2
+Warnning=-w-
+Debug=
+Compiler=-k -b
+PreHeader=-H-
+Call=-pc
+Language=-AT
+Option=-WU
+IncludePath=
+LibraryFile=
+Define=
+ResIncludePath="C:\Program Files (x86)\bcc\borland\bcc55\Include"
+OutputDir=Release
+MakeBefore=
+MakeAfter=
+
+[OpenFiles]
+FileCount=2
+FileName1=1.cpp
+FileName2=resource.rc
+ActivePageIndex=0
+

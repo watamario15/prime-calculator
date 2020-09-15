@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2β eMbedded Visual C++ 4.0版ソースコード
+# 素因数分解プログラム Ver. 2β2 eMbedded Visual C++ 4.0版ソースコード
 Windows CE用のソースコードです。
 
 # ビルド時の要件
@@ -7,7 +7,7 @@ Windows CE用のソースコードです。
 ただし、このIDEはWindows 2000とXPでしか動かないという代物です。
 
 # 注釈
-ソースコードは、このファイルと同階層にある**1.cpp**です。
+ソースコードは**1.cpp**、リソーススクリプトは**resource.rc**、アイコンは**app.ico**です。eMbedded Visual C++ 4.0であれば、**PrimeFactorization.vcw**を開くことでプログラムの編集及びビルドが可能です。
 
 実行可能バイナリは、デバッグビルドは**ARMV4IDbg**フォルダ、リリースビルドは**ARMV4IRel**フォルダに**AppMain.exe**として生成されます。
 

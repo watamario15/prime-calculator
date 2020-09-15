@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <commdlg.h>
+#include <tchar.h>
 
 #ifdef ARMV4
 #define TARGET_CPU TEXT("ARMv4")
@@ -38,15 +39,19 @@
 #ifdef IA32 // コンパイルオプションで手動定義
 #define TARGET_CPU TEXT("IA-32(x86)")
 #endif
+#define COMPILER_NAME TEXT("Microsoft eMbedded Visual C++ 4.0")
+#define TARGET_PLATFORM TEXT("WinCE")
 
 #define WND_CLASS_NAME TEXT("My_Window")
-#define TIMER_AWAIT 256
+#define TIMER_AWAIT 250
+#define NUMOFSTRINGTABLE 46 // String Table に含まれる文字列の数
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
 
 HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hbtn_0, hbtn_1, hbtn_2, hbtn_3, hbtn_4, hbtn_5, hbtn_6, hbtn_7, hbtn_8, hbtn_9, hbtn_CE, hbtn_BS, hedi0, hedi1, hedi2, hedi_out, hCmdBar, hwnd_temp, hwnd_focused;
 HINSTANCE hInst; // Instance Handle のバックアップ
 HMENU hmenu;
 MENUITEMINFO mii;
+HACCEL hAccel;
 OPENFILENAME ofn;
 DWORD dThreadID;
 HANDLE hThread, hFile;
@@ -58,10 +63,12 @@ HPEN hPen, hPenSys; // 取得するペン
 PAINTSTRUCT ps;
 RECT rect;
 HBITMAP hBitmap;
-INT scrx=0, scry=0, editlen=0, btnsize[4], nbpos[2], CmdBar_Height;
+INT r=0, g=255, b=255, scrx=0, scry=0, editlen=0, btnsize[4], nbpos[2], CmdBar_Height;
+UINT menu[5];
+DWORD dwtemp;
 LONGLONG num[3]; // 入力値受付用変数
-bool threadcancelled=false, quitting=false, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
-WCHAR wctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, wcmes[4][4096]/*文章を保存する配列*/, wcFile[MAX_PATH+1], wcEdit[65540];
+bool aborted=false, TimerRestartable=true, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
+TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[NUMOFSTRINGTABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
 CHAR cEdit[65540];
 WNDPROC wpedi0_old, wpedi1_old, wpedi2_old; // 元の Window Procedure のアドレス格納用変数
 
@@ -72,85 +79,58 @@ LRESULT CALLBACK Edit2WindowProc(HWND, UINT, WPARAM, LPARAM);
 DWORD WINAPI PrimeFactorization(LPVOID);
 DWORD WINAPI ListPrimeNumbers(LPVOID);
 void Paint();
-void ChangeBackgroundColor();
-void OutputInEditbox(HWND hWnd, LPCTSTR arg){ // エディットボックスの末尾に文字列を追加
-    int EditLen = (INT)SendMessage(hWnd, WM_GETTEXTLENGTH, 0, 0);
+void ResizeMoveControls();
+void OutputToEditbox(HWND hWnd, LPCTSTR arg){ // エディットボックスの末尾に文字列を追加
+    INT EditLen = (INT)SendMessage(hWnd, WM_GETTEXTLENGTH, 0, 0);
     SendMessage(hWnd, EM_SETSEL, EditLen, EditLen);
     SendMessage(hWnd, EM_REPLACESEL, 0, (WPARAM)arg);
     return;
 }
 void FinalizeErrorLPN(){
+    TCHAR tcstr[1024];
     working = false;
     EnableWindow(hbtn_ok, TRUE);
     EnableWindow(hedi0, TRUE);
     EnableWindow(hedi1, TRUE);
-    if(!onlycnt)EnableWindow(hedi2, TRUE);
+    if(!onlycnt) EnableWindow(hedi2, TRUE);
     EnableWindow(hbtn_abort, FALSE);
-    EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
+    EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
-    SetWindowText(hwnd, wcmes[0]);
+    wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+    SetWindowText(hwnd, tcstr);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-    threadcancelled = false;
-    SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    aborted = false;
+    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     return;
 }
 
 // 第3引数をLPSTR型からLPTSTR型に変更(CEの独自仕様)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nShowCmd){
-    hInst=hInstance;
+    hInst = hInstance;
     
     WNDCLASS wcl; // WNDCLASSEXは非対応
     wcl.hInstance = hInstance;
     wcl.lpszClassName = WND_CLASS_NAME;
-    wcl.lpfnWndProc = (WNDPROC)WindowProc;
+    wcl.lpfnWndProc = WindowProc;
     wcl.style = 0;
-    wcl.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(100)); // load the icon
+    wcl.hIcon = LoadIcon(hInstance, TEXT("Res_Icon")); // アイコンを読み込む
     wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcl.lpszMenuName = NULL; // CEの場合、メニューリソースをここで読んでも無意味
+    wcl.lpszMenuName = NULL;
     wcl.cbClsExtra = 0;
     wcl.cbWndExtra = 0;
     wcl.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
     if(!RegisterClass(&wcl)) return FALSE;
 
-    // default title
-    wcscpy(wcmes[0], TEXT("素因数分解プログラム - WinCE API ") TARGET_CPU);
-
-    // "about" statement
-    wcscpy(wcmes[1], TEXT("素因数分解 for SHARP Brain Ver. 2β\n\n")
-        TEXT("素数関連の計算を行うシンプルなフリーソフトウェアです。")
-        TEXT("1～9223372036854775807の自然数に対応しています。\n")
-        TEXT("\nwatamarioは、このソフトウェアの使用によって発生した計算結果の誤り、バグ等による誤動作を含む")
-        TEXT("いかなる損害に対しても補償致しません。自己責任でご利用ください。\n")
-        TEXT("\n開発環境: Microsoft eMbedded Visual C++ 4.0\n")
-        TEXT("プログラム種別: WinCE Application\n")
-        TEXT("CPUアーキテクチャ: ") TARGET_CPU
-        TEXT("\nビルド日時: ") TEXT(__DATE__) TEXT(" ") TEXT(__TIME__)
-        TEXT("\n\n(C) 2018-2020 watamario")
-    );
-
-    // "how to use" statement for Prime Factorization
-    wcscpy(wcmes[2], TEXT("入力された自然数を素因数分解します。素数判定にも利用できます。\n")
-        TEXT("上の入力ボックスに自然数を入力し、OKボタンまたはEnter(決定)で処理を開始します。\n")
-        TEXT("巨大な素因数を持つ自然数を処理するのには時間がかかります。あまりに長く、待てない場合は中断ボタンで中断できます。\n")
-        TEXT("結果及びエラー内容は、画面中央のボックスに出力されます。\n")
-        TEXT("上のメニューバーのオプションから、素数列挙・数え上げの機能に切り替えられます。\n")
-    );
-
-    // "how to use" statement for List Prime Numbers and Counting
-    wcscpy(wcmes[3], TEXT("入力された範囲で素数の列挙、数え上げを行います。\n")
-        TEXT("上の各入力ボックスに自然数を入力し、OKボタンまたはEnterで処理を開始します。\n")
-        TEXT("空白または0を入力すると、無制限として扱われます。\n")
-        TEXT("入力内容によってはかなりの時間がかかる場合があります。その場合は中断ボタンで中断できます。\n")
-        TEXT("結果及びエラー内容は、画面中央のボックスに出力されます。\n")
-        TEXT("上のメニューバーのオプションから、出力を調整できます。テキストファイル出力を指定すると、")
-        TEXT("指定した場所にANSI(Shift-JIS)で出力されます。なお、1000を超える数を個数上限として指定した場合は必ずこの方法が指定されます。\n")
-        TEXT("同様にオプションから、素因数分解の機能に切り替えられます。\n")
-    );
+    // 英語版リソース読み込み
+    for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInstance, i+1100, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
+    
+    // 初期タイトル文字列を生成
+    wsprintf(tctemp, TEXT("%s - ") TARGET_CPU, tcmes[0]);
 
     hwnd = CreateWindowEx( // ここのExはこのままでいいみたい
         0, 
         WND_CLASS_NAME,
-        wcmes[0],
+        tctemp,
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CLIPCHILDREN, // WS_CLIPCHILDREN で子ウィンドウ領域を描画対象から外す(ちらつき防止)
         CW_USEDEFAULT,
         CW_USEDEFAULT,
@@ -161,223 +141,212 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
         hInstance,
         NULL);
 
-    hbtn_ok = CreateWindowEx( // ok button
+    // WM_SIZE でサイズ調整するので、生成時は適当でいい
+    hbtn_ok = CreateWindowEx( // OKボタン
         0,
         TEXT("BUTTON"),
-        TEXT("OK"),
+        tcmes[4],
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        320, 
+        0, 
         0,
-        64,
-        32,
+        0,
+        0,
         hwnd,
         (HMENU)0,
         hInstance,
         NULL);
 
-    hbtn_abort = CreateWindowEx( // abort button
+    hbtn_abort = CreateWindowEx( // 中断ボタン
         0,
         TEXT("BUTTON"),
-        TEXT("中断"),
+        tcmes[5],
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_DISABLED,
-        384,
         0,
-        64,
-        32,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)1,
         hInstance,
         NULL);
 
-    hbtn_clr = CreateWindowEx( // clear the history button
+    hbtn_clr = CreateWindowEx( // 履歴消去ボタン
         0,
         TEXT("BUTTON"),
-        TEXT("履歴消去"),
+        tcmes[6],
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        448,
         0,
-        128,
-        32,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)2,
         hInstance,
         NULL);
     
-    nbpos[0]=24;
     hbtn_0 = CreateWindowEx( // 0
         0,
         TEXT("BUTTON"),
         TEXT("0"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)10,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_1 = CreateWindowEx( // 1
         0,
         TEXT("BUTTON"),
         TEXT("1"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)11,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_2 = CreateWindowEx( // 2
         0,
         TEXT("BUTTON"),
         TEXT("2"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)12,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_3 = CreateWindowEx( // 3
         0,
         TEXT("BUTTON"),
         TEXT("3"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)13,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_4 = CreateWindowEx( // 4
         0,
         TEXT("BUTTON"),
         TEXT("4"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)14,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_5 = CreateWindowEx( // 5
         0,
         TEXT("BUTTON"),
         TEXT("5"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)15,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_6 = CreateWindowEx( // 6
         0,
         TEXT("BUTTON"),
         TEXT("6"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)16,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_7 = CreateWindowEx( // 7
         0,
         TEXT("BUTTON"),
         TEXT("7"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)17,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_8 = CreateWindowEx( // 8
         0,
         TEXT("BUTTON"),
         TEXT("8"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)18,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
     hbtn_9 = CreateWindowEx( // 9
         0,
         TEXT("BUTTON"),
         TEXT("9"),
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)19,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
-    hbtn_BS = CreateWindowEx( // Back Space
+    hbtn_BS = CreateWindowEx( // 削除ボタン
         0,
         TEXT("BUTTON"),
-        TEXT("削除"),
+        tcmes[44],
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)20,
         hInstance,
         NULL);
-    nbpos[0]+=36;
 
-    hbtn_CE = CreateWindowEx(//Clear Entry
+    hbtn_CE = CreateWindowEx( // 全消去ボタン
         0,
         TEXT("BUTTON"),
-        TEXT("全消"),
+        tcmes[45],
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        nbpos[0],
-        81,
-        36,
-        25,
+        0,
+        0,
+        0,
+        0,
         hwnd,
         (HMENU)21,
         hInstance,
@@ -388,14 +357,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
     ShowWindow(hwnd, nShowCmd);
     ShowWindow(hwnd, SW_MAXIMIZE);
     UpdateWindow(hwnd);
+    hAccel = LoadAccelerators(hInstance, TEXT("Res_Accel"));
 
     MSG msg;
     BOOL bRet;
     SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
 
-    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ){ // continue unless the message is WM_QUIT(=0)
-        if(bRet==-1) break;
-        else{
+    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ){ // Window Message が WM_QUIT(=0) でない限りループ
+        if(bRet==-1) break; // エラーなら抜ける
+        else if(!TranslateAccelerator(hwnd, hAccel, &msg)){
             TranslateMessage(&msg);
             DispatchMessage(&msg); 
         }
@@ -404,48 +374,50 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 }
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
-    switch(uMsg) {
-        case WM_CREATE: // called at first
+    switch(uMsg){
+        case WM_CREATE: // 最初に出されるメッセージ
             // メニューの初期化
-            hCmdBar = CommandBar_Create(hInst, hWnd, 1);            
-            CommandBar_InsertMenubar(hCmdBar, hInst, 1001, 0);
+            hCmdBar = CommandBar_Create(hInst, hWnd, 1);
+            CommandBar_InsertMenubarEx(hCmdBar, hInst, TEXT("Res_EnglishMenu"), 0);
             CommandBar_Show(hCmdBar, TRUE);
-            CmdBar_Height=CommandBar_Height(hCmdBar);
-            hmenu=CommandBar_GetMenu(hCmdBar, 0);
+            CmdBar_Height = CommandBar_Height(hCmdBar);
+            hmenu = CommandBar_GetMenu(hCmdBar, 0);
             CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
+            CheckMenuRadioItem(hmenu, 2071, 2072, 2072, MF_BYCOMMAND);
             EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
 
             hMemDC = CreateCompatibleDC(NULL);
             hBshSys = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
             hPenSys = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNFACE));
             
-            hedi0 = CreateWindowEx( // input box
-               0,
-               TEXT("EDIT"),
-               NULL,
-               WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_AUTOHSCROLL | ES_NUMBER,
-               64, // x
-               0, // y
-               256, // x長さ
-               32, // y長さ
-               hWnd,
-               (HMENU)50,
-               ((LPCREATESTRUCT)(lParam))->hInstance,
-               NULL);
+            hedi0 = CreateWindowEx( // 入力ボックス
+                0,
+                TEXT("EDIT"),
+                NULL,
+                WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_AUTOHSCROLL | ES_NUMBER,
+                0,
+                0,
+                0,
+                0,
+                hWnd,
+                (HMENU)50,
+                ((LPCREATESTRUCT)(lParam))->hInstance,
+                NULL);
             SendMessage(hedi0, EM_SETLIMITTEXT, (WPARAM)19, 0); // 符号付き64ビットの限界桁数に設定
-            wpedi0_old=(WNDPROC)SetWindowLong(hedi0, GWL_WNDPROC, (DWORD)Edit0WindowProc);
+            wpedi0_old = (WNDPROC)SetWindowLong(hedi0, GWL_WNDPROC, (DWORD)Edit0WindowProc);
             SetFocus(hedi0); hwnd_focused = hedi0;
             
-            hedi_out = CreateWindowEx( // results box
+            hedi_out = CreateWindowEx( // 結果出力ボックス
                 0,
                 TEXT("EDIT"),
                 NULL,
                 WS_CHILD | WS_VISIBLE | ES_READONLY | ES_LEFT | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
-                scrx/20,
-                scry*3/10,
-                scrx*9/10,
-                scry*6/10,
+                0,
+                0,
+                0,
+                0,
                 hWnd,
                 (HMENU)60,
                 ((LPCREATESTRUCT)(lParam))->hInstance,
@@ -453,180 +425,60 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             SendMessage(hedi_out, EM_SETLIMITTEXT, (WPARAM)65536, 0); // 文字数制限を最大値に変更
             break;
 
-        case WM_CLOSE: // called when closing
-            KillTimer(hWnd, 1); // stop the timer
-            quitting=true;
-            if(IDYES == MessageBox(hWnd, TEXT("本当に終了しますか？"), TEXT("プログラムの終了"), MB_YESNO | MB_ICONINFORMATION)) {
+        case WM_CLOSE: // 終了時
+            KillTimer(hWnd, 1); // タイマーを止める
+            TimerRestartable = false;
+            if(IDYES == MessageBox(hWnd, tcmes[7], tcmes[8], MB_YESNO | MB_ICONINFORMATION)){
+                KillTimer(hWnd, 1);
                 DestroyWindow(hWnd);
             }else{
-                SetTimer(hWnd, 1, TIMER_AWAIT, NULL); // restart the timer
-                quitting=false;
-                SetFocus(hwnd_focused); // set focus on a input box
+                SetTimer(hWnd, 1, TIMER_AWAIT, NULL); // タイマーを再開
+                TimerRestartable = true;
+                SetFocus(hwnd_focused); // 直近までフォーカスが当たっていたエディットボックスにフォーカスを戻す
             }
             break;
 
         case WM_TIMER:
-            ChangeBackgroundColor();
-            if(!(hwnd_temp=GetFocus()) || (hwnd_temp!=hedi0 && hwnd_temp!=hedi1 && hwnd_temp!=hedi2)) break;
-            hwnd_focused = hwnd_temp;
+            if( (hwnd_temp=GetFocus()) && (hwnd_temp==hedi0 || hwnd_temp==hedi1 || hwnd_temp==hedi2 || hwnd_temp==hedi_out)) hwnd_focused = hwnd_temp;
+            
+            if(b<=0 && g<255) g+=8; //
+            if(g>=255 && r>0) r-=8; //
+            if(r<=0 && b<255) b+=8; //
+            if(b>=255 && g>0) g-=8; //
+            if(g<=0 && r<255) r+=8; //
+            if(r>=255 && b>0) b-=8; //
+                                    //
+            if(r>255) r=255;        //
+            if(r<0) r=0;            //
+            if(g>255) g=255;        //
+            if(g<0) g=0;            //
+            if(b>255) b=255;        //
+            if(b<0) b=0;            //
+
+            DeleteObject(hBrush);
+            DeleteObject(hPen);
+            hBrush = CreateSolidBrush(RGB(r, g, b)); // ブラシを作成(塗りつぶし用)
+            hPen = CreatePen(PS_SOLID, 1, RGB(r, g, b)); // ペンを作成(輪郭用)
+            InvalidateRect(hWnd, NULL, FALSE);
+            break;
+                
+        case WM_SIZE: // ウィンドウサイズ変更時
+            ResizeMoveControls();
             break;
 
         case WM_PAINT:
             Paint();
             break;
-                
-        case WM_SIZE: // when the window size is changed
-            GetClientRect(hWnd, &rect);
-            scrx=rect.right; scry=rect.bottom-CmdBar_Height; // Command Barの幅だけ引く
-
-            // create a font for the main window
-            if(scrx/16 < scry/10) rLogfont.lfHeight = scrx/16;
-            else rLogfont.lfHeight = scry/10;
-            rLogfont.lfWidth = 0;
-            rLogfont.lfEscapement = 0;
-            rLogfont.lfOrientation = 0;
-            rLogfont.lfWeight = FW_EXTRABOLD;
-            rLogfont.lfItalic = TRUE;
-            rLogfont.lfUnderline = TRUE;
-            rLogfont.lfStrikeOut = FALSE;
-            rLogfont.lfCharSet = SHIFTJIS_CHARSET;
-            rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
-            rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-            rLogfont.lfQuality = DEFAULT_QUALITY;
-            rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-            wsprintf(rLogfont.lfFaceName, TEXT("MS PGothic"));
-            DeleteObject(hMesFont);
-            hMesFont = CreateFontIndirect(&rLogfont); // フォントを作成
-            
-            // create a font for buttons
-            if(24*scrx/700 < 24*scry/400) rLogfont.lfHeight = 24*scrx/700;
-            else rLogfont.lfHeight = 24*scry/400;
-            rLogfont.lfWidth = 0;
-            rLogfont.lfEscapement = 0;
-            rLogfont.lfOrientation = 0;
-            rLogfont.lfWeight = FW_NORMAL;
-            rLogfont.lfItalic = FALSE;
-            rLogfont.lfUnderline = FALSE;
-            rLogfont.lfStrikeOut = FALSE;
-            rLogfont.lfCharSet = SHIFTJIS_CHARSET;
-            rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
-            rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-            rLogfont.lfQuality = DEFAULT_QUALITY;
-            rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-            wsprintf(rLogfont.lfFaceName, TEXT("MS PGothic"));
-            DeleteObject(hFbtn);
-            hFbtn = CreateFontIndirect(&rLogfont);
-
-            // create a font for notes
-            if(15*scrx/700 < 15*scry/400) rLogfont.lfHeight = 15*scrx/700;
-            else rLogfont.lfHeight = 15*scry/400;
-            DeleteObject(hFnote);
-            hFnote = CreateFontIndirect(&rLogfont);
-
-            // create a font for edit boxes
-            if(16*scrx/700 < 16*scry/400) rLogfont.lfHeight = 16*scrx/700;
-            else rLogfont.lfHeight = 16*scry/400;
-            if(rLogfont.lfHeight<12) rLogfont.lfHeight=12;
-            rLogfont.lfWidth = 0;
-            rLogfont.lfEscapement = 0;
-            rLogfont.lfOrientation = 0;
-            rLogfont.lfWeight = FW_NORMAL;
-            rLogfont.lfItalic = FALSE;
-            rLogfont.lfUnderline = FALSE;
-            rLogfont.lfStrikeOut = FALSE;
-            rLogfont.lfCharSet = SHIFTJIS_CHARSET;
-            rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
-            rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-            rLogfont.lfQuality = DEFAULT_QUALITY;
-            rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-            wsprintf(rLogfont.lfFaceName, TEXT("MS Gothic"));
-            DeleteObject(hFedi);
-            hFedi = CreateFontIndirect(&rLogfont);
-
-            // apply newly created fonts to objects
-            SendMessage(hbtn_ok, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_abort, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_clr, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_3, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_4, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_5, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_6, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_7, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_8, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_9, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_BS, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hbtn_CE, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hedi0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            SendMessage(hedi_out, WM_SETFONT, (WPARAM)hFedi, MAKELPARAM(FALSE, 0));
-            if(mode){
-                SendMessage(hedi1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-                SendMessage(hedi2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
-            }
-
-            // move and resize objects
-            MoveWindow(hCmdBar, NULL, NULL, NULL, NULL, TRUE);
-            btnsize[0] = 64*scrx/700; btnsize[1] = 32*scry/400;
-            btnsize[2]=scrx*9/120; btnsize[3]=8*scry/100;
-            if(!mode){
-                MoveWindow(hedi0, btnsize[0], CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
-                MoveWindow(hbtn_ok, btnsize[0]*5, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_abort, btnsize[0]*6, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_clr, btnsize[0]*7, CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
-                MoveWindow(hedi_out, scrx/20, scry*3/9+CmdBar_Height, scrx*9/10, scry*6/10, TRUE);
-                nbpos[0]=scrx/20; nbpos[1]=scry/3-btnsize[3]+CmdBar_Height;
-            }else{
-                MoveWindow(hedi0, btnsize[0], CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
-                MoveWindow(hedi1, btnsize[0]*6, CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
-                MoveWindow(hedi2, btnsize[0], btnsize[1]+CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
-                MoveWindow(hbtn_ok, btnsize[0]*3, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_abort, btnsize[0]*4, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
-                MoveWindow(hbtn_clr, btnsize[0]*5, btnsize[1]+CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
-                MoveWindow(hedi_out, scrx/20, scry*4/9+CmdBar_Height, scrx*9/10, scry/2, TRUE);
-                nbpos[0]=scrx/20; nbpos[1]=scry*4/9-btnsize[3]+CmdBar_Height;
-            }
-            MoveWindow(hbtn_0, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_1, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_2, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_3, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_4, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_5, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_6, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_7, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_8, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_9, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_BS, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-            nbpos[0]+=btnsize[2];
-            MoveWindow(hbtn_CE, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
-
-            hBitmap=CreateCompatibleBitmap(hdc=GetDC(hWnd), scrx, scry);
-            ReleaseDC(hWnd, hdc);
-            SelectObject(hMemDC, hBitmap); // update the memory device context in new size
-            DeleteObject(hBitmap);
-            InvalidateRect(hWnd, NULL, FALSE);
-            break;
 
         case WM_ACTIVATE:
-            // set focus on the input box when the main window is activated
+            // メインウィンドウがアクティブ化されたとき、直近にフォーカスが当たっていたエディットにフォーカスを渡す
             if(LOWORD(wParam) == WA_ACTIVE || LOWORD(wParam) == WA_CLICKACTIVE) SetFocus(hwnd_focused);
             break;
 
         case WM_COMMAND:
             switch(LOWORD(wParam)){
-                case 0: // OK button
-                    if (working) break;
+                case 0: // OKボタン
+                    if(working) break;
                     working = true;
                     KillTimer(hWnd, 1);
                     EnableWindow(hbtn_ok, FALSE);
@@ -634,18 +486,18 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     EnableWindow(hedi1, FALSE);
                     EnableWindow(hedi2, FALSE);
                     EnableWindow(hbtn_abort, TRUE);
-                    EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
+                    EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
 
-                    SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)wctemp);
-                    num[0]=_wtoi64(wctemp);
+                    SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
+                    num[0] = _ttoi64(tctemp);
                     if(mode){
-                        SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)wctemp);
-                        num[1]=_wtoi64(wctemp);
-                        SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)wctemp);
-                        num[2]=_wtoi64(wctemp);
+                        SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
+                        num[1] = _ttoi64(tctemp);
+                        SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
+                        num[2] = _ttoi64(tctemp);
                     }
-                    SetWindowText(hWnd, TEXT("計算中...しばらくお待ち下さい..."));
+                    SetWindowText(hWnd, tcmes[9]);
                     InvalidateRect(hWnd, NULL, FALSE);
 
                     if(!mode) hThread = CreateThread(NULL, 0, PrimeFactorization, NULL, 0, &dThreadID);
@@ -653,32 +505,32 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
                     break;
 
-                case 1: // abort
-                    threadcancelled = true;
+                case 1: // 中断ボタン
+                    aborted = true;
                     break;
 
-                case 2: // clear the history
+                case 2: // 履歴消去
                     editlen = (INT)SendMessage(hedi_out, WM_GETTEXTLENGTH, 0, 0);
                     SendMessage(hedi_out, EM_SETSEL, 0, editlen);
                     SendMessage(hedi_out, EM_REPLACESEL, 0, (WPARAM)TEXT(""));
                     break;
 
-                case 2001: // save
-                    wcFile[0]=L'\0'; wcEdit[0]=L'\0';
+                case 2001: // テキストファイルに保存
+                    tcFile[0] = L'\0'; tcEdit[0] = L'\0';
                     ZeroMemory(&ofn, sizeof(OPENFILENAME));
                     ofn.lStructSize = sizeof(OPENFILENAME);
                     ofn.hwndOwner = hWnd;
                     ofn.lpstrFilter = TEXT("ANSI TEXT (*.txt)\0*.txt\0")
                                       TEXT("All files (*.*)\0*.*\0");
-                    ofn.lpstrFile = wcFile;
+                    ofn.lpstrFile = tcFile;
                     ofn.nMaxFile = MAX_PATH;
                     ofn.lpstrDefExt = TEXT(".txt");
-                    ofn.lpstrTitle = TEXT("保存先の指定");
+                    ofn.lpstrTitle = tcmes[10];
                     ofn.Flags = OFN_OVERWRITEPROMPT;
                     if(!GetSaveFileName(&ofn)) break;
 
                     hFile = CreateFile(
-                        wcFile,
+                        tcFile,
                         GENERIC_WRITE,
                         FILE_SHARE_READ, // 他プログラムにもReadは許可
                         NULL,
@@ -686,50 +538,44 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         FILE_ATTRIBUTE_NORMAL,
                         NULL);
                     if(hFile == INVALID_HANDLE_VALUE){
-                        MessageBox(hWnd, TEXT("ファイルの作成またはオープンに失敗しました。\n書き込み禁止になっていないかを確認してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
+                        MessageBox(hWnd, tcmes[11], tcmes[12], MB_OK | MB_ICONWARNING);
                         break;
                     }
 
-                    GetWindowText(hedi_out, wcEdit, (editlen=GetWindowTextLength(hedi_out))+1);
-                    WideCharToMultiByte(932, NULL, wcEdit, editlen+1, cEdit,
-                        WideCharToMultiByte(932, NULL, wcEdit, editlen+1, NULL, 0, NULL, NULL), // 変換後文字数取得のために2重呼び出し
+                    GetWindowText(hedi_out, tcEdit, (editlen=GetWindowTextLength(hedi_out))+1);
+                    WideCharToMultiByte(932, NULL, tcEdit, editlen+1, cEdit,
+                        WideCharToMultiByte(932, NULL, tcEdit, editlen+1, NULL, 0, NULL, NULL), // 変換後文字数取得
                         NULL, NULL);
-                    if(WriteFile(hFile, cEdit, strlen(cEdit)*sizeof(CHAR), NULL, NULL)){
-                        MessageBox(hWnd, TEXT("出力ボックスの内容をテキストファイルに書き出しました。"), TEXT("情報"), MB_OK | MB_ICONINFORMATION);
+                    if(WriteFile(hFile, cEdit, strlen(cEdit)*sizeof(CHAR), &dwtemp, NULL)){
+                        MessageBox(hWnd, tcmes[13], tcmes[14], MB_OK | MB_ICONINFORMATION);
                     }else{
-                        MessageBox(hWnd, TEXT("出力ファイルへの書き込みに失敗しました。\n別のパスで再試行してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
+                        MessageBox(hWnd, tcmes[15], tcmes[12], MB_OK | MB_ICONWARNING);
                     }
                     CloseHandle(hFile);
                     break;
 
-                case 2002: // copy
-                    editlen = (INT)SendMessage(hedi_out, WM_GETTEXTLENGTH, 0, 0);
-                    SendMessage(hedi_out, EM_SETSEL, 0, editlen);
-                    SendMessage(hedi_out, WM_COPY, 0, 0);
-                    MessageBox(hWnd, TEXT("出力ボックスの内容をクリップボードにコピーしました。"), TEXT("情報"), MB_OK | MB_ICONINFORMATION);
-                    break;
-
-                case 2009: // close menu in the menubar
+                case 2009: // 終了
                     SendMessage(hWnd, WM_CLOSE, 0, 0);
                     break;
 
-                case 2101: // "how to use" menu in the menubar
-                    KillTimer(hWnd, 1);
-                    quitting=true;
-                    MessageBox(hWnd, wcmes[(mode ? 3 : 2)], TEXT("使い方"), MB_OK | MB_ICONINFORMATION);
-                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
-                    quitting=false;
+                case 2021: // 切り取り
+                    SendMessage(hwnd_focused, WM_CUT, 0, 0);
                     break;
 
-                case 2109: // "about" menu in the menubar
-                    KillTimer(hWnd, 1);
-                    quitting=true;
-                    MessageBox(hWnd, wcmes[1], TEXT("このプログラムについて"), MB_OK | MB_ICONINFORMATION);
-                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
-                    quitting=false;
+                case 2022: // コピー
+                    SendMessage(hwnd_focused, WM_COPY, 0, 0);
                     break;
 
-                case 20: // partial delete
+                case 2023: // 貼り付け
+                    SendMessage(hwnd_focused, WM_PASTE, 0, 0);
+                    break;
+
+                case 2024: // 全選択
+                    editlen = (INT)SendMessage(hwnd_focused, WM_GETTEXTLENGTH, 0, 0);
+                    SendMessage(hwnd_focused, EM_SETSEL, 0, editlen);
+                    break;
+
+                case 20: // 削除
                     editlen = SendMessage(hwnd_focused, EM_GETSEL, 0, 0);
                     if(LOWORD(editlen)==HIWORD(editlen)){
                         SendMessage(hwnd_focused, EM_SETSEL, LOWORD(editlen)-1, LOWORD(editlen));
@@ -737,13 +583,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     }else SendMessage(hwnd_focused, EM_REPLACESEL, 0, (WPARAM)TEXT(""));
                     break;
 
-                case 21: // clear entry
+                case 21: // 全消去
                     editlen = SendMessage(hwnd_focused, WM_GETTEXTLENGTH, 0, 0);
                     SendMessage(hwnd_focused, EM_SETSEL, 0, editlen);
                     SendMessage(hwnd_focused, EM_REPLACESEL, 0, (WPARAM)TEXT(""));
                     break;
 
-                case 2051: // "Prime Factorization" menu in the menubar
+                case 2051: // 素因数分解に変更
+                    if(!mode) break;
                     CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
                     EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
                     EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
@@ -755,13 +602,14 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SendMessage(hWnd, WM_SIZE, 0, 0);
                     break;
 
-                case 2052: // "List/Count Prime Numbers" menu in the menubar
+                case 2052: // 素数列挙・数えに変更
+                    if(mode) break;
                     CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
-                    EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MFS_ENABLED);
-                    EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MFS_ENABLED);
-                    EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MFS_ENABLED);
+                    EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_ENABLED);
+                    EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_ENABLED);
+                    EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_ENABLED);
                     mode = 1;
-                    hedi1 = CreateWindowEx( // input box
+                    hedi1 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
                         NULL,
@@ -775,9 +623,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         hInst,
                         NULL);
                     SendMessage(hedi1, EM_SETLIMITTEXT, (WPARAM)19, 0);
-                    wpedi1_old=(WNDPROC)SetWindowLong(hedi1, GWL_WNDPROC, (DWORD)Edit1WindowProc); // Window Procedure のすり替え
+                    wpedi1_old = (WNDPROC)SetWindowLong(hedi1, GWL_WNDPROC, (DWORD)Edit1WindowProc); // Window Procedure のすり替え
 
-                    hedi2 = CreateWindowEx( // input box
+                    hedi2 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
                         NULL,
@@ -792,60 +640,201 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         NULL);
                     SendMessage(hedi2, EM_SETLIMITTEXT, (WPARAM)19, 0);
                     SendMessage(hWnd, WM_SIZE, 0, 0);
-                    wpedi2_old=(WNDPROC)SetWindowLong(hedi2, GWL_WNDPROC, (DWORD)Edit2WindowProc); // Window Procedure のすり替え
+                    wpedi2_old = (WNDPROC)SetWindowLong(hedi2, GWL_WNDPROC, (DWORD)Edit2WindowProc); // Window Procedure のすり替え
                     break;
 
-                case 2060: // "Show only number of them" menu in the menubar
+                case 2060: // 「個数のみ表示」
                     ZeroMemory(&mii, sizeof(mii));
-                    mii.fMask=MIIM_STATE;
-                    mii.cbSize=sizeof(MENUITEMINFO);
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
                     GetMenuItemInfo(hmenu, 2060, FALSE, &mii);
-                    if(mii.fState & MFS_CHECKED) { // 既にチェックがついていた場合
-                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MFS_UNCHECKED);
-                        EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MFS_ENABLED);
+                    if(mii.fState & MF_CHECKED){ // 既にチェックがついていた場合
+                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_UNCHECKED);
+                        EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_ENABLED);
                         EnableWindow(hedi2, TRUE);
                         onlycnt = false;
                     }else{
-                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MFS_CHECKED);
+                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
                         EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
                         EnableWindow(hedi2, FALSE);
                         onlycnt = true;
                     }
                     break;
 
-                case 2061: // "Output in a text file" menu in the menubar
+                case 2061: // 「テキストファイルに出力」
                     ZeroMemory(&mii, sizeof(mii));
-                    mii.fMask=MIIM_STATE;
-                    mii.cbSize=sizeof(MENUITEMINFO);
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
                     GetMenuItemInfo(hmenu, 2061, FALSE, &mii);
-                    if(mii.fState & MFS_CHECKED) {
-                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MFS_UNCHECKED);
+                    if(mii.fState & MF_CHECKED){
+                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_UNCHECKED);
                         usefile = false;
                     }else{
-                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MFS_CHECKED);
+                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
                         usefile = true;
                     }
                     break;
 
-                case 2062: // "Overwrite" menu in the menubar
+                case 2062: // 「既存のファイルに上書き」
                     ZeroMemory(&mii, sizeof(mii));
-                    mii.fMask=MIIM_STATE;
-                    mii.cbSize=sizeof(MENUITEMINFO);
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
                     GetMenuItemInfo(hmenu, 2062, FALSE, &mii);
-                    if(mii.fState & MFS_CHECKED) {
-                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MFS_UNCHECKED);
+                    if(mii.fState & MF_CHECKED){
+                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_UNCHECKED);
                         overwrite = false;
                     } else{
-                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MFS_CHECKED);
+                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
                         overwrite = true;
                     }
                     break;
+
+                case 2070: // 日本語に変更
+                    // 状態のバックアップ
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2051, FALSE, &mii);
+                    menu[0] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2052, FALSE, &mii);
+                    menu[1] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2060, FALSE, &mii);
+                    menu[2] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2061, FALSE, &mii);
+                    menu[3] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2062, FALSE, &mii);
+                    menu[4] = mii.fState;
+
+                    DestroyMenu(hmenu);
+                    CommandBar_Destroy(hCmdBar);
+                    hCmdBar = CommandBar_Create(hInst, hWnd, 1);
+                    CommandBar_InsertMenubarEx(hCmdBar, hInst, TEXT("Res_JapaneseMenu"), 0);
+                    CommandBar_Show(hCmdBar, TRUE);
+                    CmdBar_Height = CommandBar_Height(hCmdBar);
+                    hmenu = CommandBar_GetMenu(hCmdBar, 0);
+                    CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
+
+                    // チェック・ラジオボタンの復元
+                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
+                    else CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
+                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
+
+                    // 有効無効の復元
+                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+
+                    {for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInst, i+1000, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));}
+                    SetWindowText(hbtn_ok, tcmes[4]);
+                    SetWindowText(hbtn_abort, tcmes[5]);
+                    SetWindowText(hbtn_clr, tcmes[6]);
+                    SetWindowText(hbtn_BS, tcmes[44]);
+                    SetWindowText(hbtn_CE, tcmes[45]);
+                    wsprintf(tctemp, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+                    SetWindowText(hwnd, tctemp);
+                    break;
+
+                case 2071: // 英語に変更
+                    // 状態のバックアップ
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2051, FALSE, &mii);
+                    menu[0] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2052, FALSE, &mii);
+                    menu[1] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2060, FALSE, &mii);
+                    menu[2] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2061, FALSE, &mii);
+                    menu[3] = mii.fState;
+                    ZeroMemory(&mii, sizeof(mii));
+                    mii.fMask = MIIM_STATE;
+                    mii.cbSize = sizeof(MENUITEMINFO);
+                    GetMenuItemInfo(hmenu, 2062, FALSE, &mii);
+                    menu[4] = mii.fState;
+
+                    DestroyMenu(hmenu);
+                    CommandBar_Destroy(hCmdBar);
+                    hCmdBar = CommandBar_Create(hInst, hWnd, 1);
+                    CommandBar_InsertMenubarEx(hCmdBar, hInst, TEXT("Res_EnglishMenu"), 0);
+                    CommandBar_Show(hCmdBar, TRUE);
+                    CmdBar_Height = CommandBar_Height(hCmdBar);
+                    hmenu = CommandBar_GetMenu(hCmdBar, 0);
+                    CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
+
+                    // チェック・ラジオボタンの復元
+                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
+                    else CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
+                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
+
+                    // 有効無効の復元
+                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+
+                    {for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInst, i+1100, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));}
+                    SetWindowText(hbtn_ok, tcmes[4]);
+                    SetWindowText(hbtn_abort, tcmes[5]);
+                    SetWindowText(hbtn_clr, tcmes[6]);
+                    SetWindowText(hbtn_BS, tcmes[44]);
+                    SetWindowText(hbtn_CE, tcmes[45]);
+                    wsprintf(tctemp, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+                    SetWindowText(hwnd, tctemp);
+                    break;
+
+                case 2101: // 使い方
+                    KillTimer(hWnd, 1);
+                    TimerRestartable = false;
+                    MessageBox(hWnd, tcmes[(mode ? 3 : 2)], tcmes[16], MB_OK | MB_ICONINFORMATION);
+                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
+                    TimerRestartable = true;
+                    break;
+
+                case 2109: // このプログラムについて
+                    KillTimer(hWnd, 1);
+                    TimerRestartable = false;
+                    wsprintf(tctemp, TEXT("%s")
+                        TEXT("%s") COMPILER_NAME TEXT("\n")
+                        TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
+                        TEXT("%s") TARGET_CPU TEXT("\n")
+                        TEXT("%s") TEXT(__DATE__) TEXT(" ") TEXT(__TIME__)
+                        TEXT("\n(C) 2018-2020 watamario"),
+                        tcmes[1], tcmes[40], tcmes[41], tcmes[42], tcmes[43]);
+                    MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
+                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
+                    TimerRestartable = true;
+                    break;
             }
-            if(LOWORD(wParam)>=10 && LOWORD(wParam)<20){ // screen keyboard
-                _itow(LOWORD(wParam)-10, wctemp, 10);
-                SendMessage(hwnd_focused, EM_REPLACESEL, 0, (WPARAM)wctemp);
+            if(LOWORD(wParam)>=10 && LOWORD(wParam)<20){ // 画面キーボード
+                _itow(LOWORD(wParam)-10, tctemp, 10);
+                SendMessage(hwnd_focused, EM_REPLACESEL, 0, (WPARAM)tctemp);
             }
-            if(LOWORD(wParam)<50) SetFocus(hwnd_focused); // set focus on input box if the clicked control isn't a edit box
+            if(LOWORD(wParam)<50) SetFocus(hwnd_focused); // エディット以外のコントロールが押されたとき、エディットにフォーカスを戻す
             else return DefWindowProc(hWnd, uMsg, wParam, lParam);
             break;
 
@@ -854,7 +843,6 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
         
         case WM_DESTROY:
-            CommandBar_Destroy(hCmdBar);
             PostQuitMessage(0);
             break;
                 
@@ -864,7 +852,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     return 0;
 }
 
-// custom window procedure for the input box
+// エディットコントロールのサブクラス化用独自Window Procedure
 LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     switch(uMsg){
         case WM_DESTROY:
@@ -875,7 +863,7 @@ LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         case WM_CHAR:
             switch((CHAR)wParam){
                 case VK_RETURN:
-                    if(!working && !mode) {
+                    if(!working && !mode){
                         working = true;
                         KillTimer(hwnd, 1);
                         EnableWindow(hbtn_ok, FALSE);
@@ -883,21 +871,22 @@ LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableWindow(hedi1, FALSE);
                         EnableWindow(hedi2, FALSE);
                         EnableWindow(hbtn_abort, TRUE);
-                        EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
+                        EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
 
-                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)wctemp);
-                        num[0]=_wtoi64(wctemp);
+                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
+                        num[0] = _ttoi64(tctemp);
                         if(mode){
-                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)wctemp);
-                            num[1]=_wtoi64(wctemp);
-                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)wctemp);
-                            num[2]=_wtoi64(wctemp);
+                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
+                            num[1] = _ttoi64(tctemp);
+                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
+                            num[2] = _ttoi64(tctemp);
                         }
-                        SetWindowText(hwnd, TEXT("計算中...しばらくお待ち下さい..."));
+                        SetWindowText(hwnd, tcmes[9]);
 
                         if(!mode) hThread = CreateThread(NULL, 0, PrimeFactorization, NULL, 0, &dThreadID);
                         else hThread = CreateThread(NULL, 0, ListPrimeNumbers, NULL, 0, &dThreadID);
+                        SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
                     } else if(mode) SetFocus(hedi1);
                     return 0;
                 case 'q':
@@ -996,7 +985,7 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         case WM_CHAR:
             switch((CHAR)wParam){
                 case VK_RETURN:
-                    if(!working) {
+                    if(!working){
                         working = true;
                         KillTimer(hwnd, 1);
                         EnableWindow(hbtn_ok, FALSE);
@@ -1004,21 +993,22 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableWindow(hedi1, FALSE);
                         EnableWindow(hedi2, FALSE);
                         EnableWindow(hbtn_abort, TRUE);
-                        EnableMenuItem(hmenu, 1, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
-                        CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
+                        EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED);
+                        CommandBar_DrawMenuBar(hCmdBar, 1);
 
-                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)wctemp);
-                        num[0]=_wtoi64(wctemp);
+                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
+                        num[0] = _ttoi64(tctemp);
                         if(mode){
-                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)wctemp);
-                            num[1]=_wtoi64(wctemp);
-                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)wctemp);
-                            num[2]=_wtoi64(wctemp);
+                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
+                            num[1] = _ttoi64(tctemp);
+                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
+                            num[2] = _ttoi64(tctemp);
                         }
-                        SetWindowText(hwnd, TEXT("計算中...しばらくお待ち下さい..."));
+                        SetWindowText(hwnd, tcmes[9]);
 
                         if(!mode) hThread = CreateThread(NULL, 0, PrimeFactorization, NULL, 0, &dThreadID);
                         else hThread = CreateThread(NULL, 0, ListPrimeNumbers, NULL, 0, &dThreadID);
+                        SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
                     }
                     return 0;
                 case 'q':
@@ -1058,10 +1048,154 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     return 0;
 }
 
+void ResizeMoveControls(){
+    GetClientRect(hwnd, &rect);
+    scrx = rect.right; scry = rect.bottom-CmdBar_Height; // Command Barの幅だけ引く
+
+    // メインウィンドウ用のフォントを作成
+    if(scrx/24 < scry/12) rLogfont.lfHeight = scrx/24;
+    else rLogfont.lfHeight = scry/12;
+    rLogfont.lfWidth = 0;
+    rLogfont.lfEscapement = 0;
+    rLogfont.lfOrientation = 0;
+    rLogfont.lfWeight = FW_EXTRABOLD;
+    rLogfont.lfItalic = TRUE;
+    rLogfont.lfUnderline = TRUE;
+    rLogfont.lfStrikeOut = FALSE;
+    rLogfont.lfCharSet = SHIFTJIS_CHARSET;
+    rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    rLogfont.lfQuality = DEFAULT_QUALITY;
+    rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
+    _tcscpy(rLogfont.lfFaceName, TEXT("MS PGothic"));
+    DeleteObject(hMesFont);
+    hMesFont = CreateFontIndirect(&rLogfont); // フォントを作成
+    
+    // ボタン用のフォントを作成
+    if(24*scrx/700 < 24*scry/400) rLogfont.lfHeight = 24*scrx/700;
+    else rLogfont.lfHeight = 24*scry/400;
+    rLogfont.lfWidth = 0;
+    rLogfont.lfEscapement = 0;
+    rLogfont.lfOrientation = 0;
+    rLogfont.lfWeight = FW_NORMAL;
+    rLogfont.lfItalic = FALSE;
+    rLogfont.lfUnderline = FALSE;
+    rLogfont.lfStrikeOut = FALSE;
+    rLogfont.lfCharSet = SHIFTJIS_CHARSET;
+    rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    rLogfont.lfQuality = DEFAULT_QUALITY;
+    rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
+    _tcscpy(rLogfont.lfFaceName, TEXT("MS PGothic"));
+    DeleteObject(hFbtn);
+    hFbtn = CreateFontIndirect(&rLogfont);
+
+    // 注釈用のフォントを作成
+    if(15*scrx/700 < 15*scry/400) rLogfont.lfHeight = 15*scrx/700;
+    else rLogfont.lfHeight = 15*scry/400;
+    DeleteObject(hFnote);
+    hFnote = CreateFontIndirect(&rLogfont);
+
+    // エディットボックス用のフォントを作成
+    if(16*scrx/700 < 16*scry/400) rLogfont.lfHeight = 16*scrx/700;
+    else rLogfont.lfHeight = 16*scry/400;
+    if(rLogfont.lfHeight<12) rLogfont.lfHeight=12;
+    rLogfont.lfWidth = 0;
+    rLogfont.lfEscapement = 0;
+    rLogfont.lfOrientation = 0;
+    rLogfont.lfWeight = FW_NORMAL;
+    rLogfont.lfItalic = FALSE;
+    rLogfont.lfUnderline = FALSE;
+    rLogfont.lfStrikeOut = FALSE;
+    rLogfont.lfCharSet = SHIFTJIS_CHARSET;
+    rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
+    rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+    rLogfont.lfQuality = DEFAULT_QUALITY;
+    rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
+    _tcscpy(rLogfont.lfFaceName, TEXT("MS Gothic"));
+    DeleteObject(hFedi);
+    hFedi = CreateFontIndirect(&rLogfont);
+
+    // 作成したフォントを各コントロールに適用
+    SendMessage(hbtn_ok, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_abort, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_clr, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_3, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_4, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_5, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_6, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_7, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_8, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_9, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_BS, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hbtn_CE, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hedi0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    SendMessage(hedi_out, WM_SETFONT, (WPARAM)hFedi, MAKELPARAM(FALSE, 0));
+    if(mode){
+        SendMessage(hedi1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+        SendMessage(hedi2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+    }
+
+    // コントロールの移動とサイズ変更
+    MoveWindow(hCmdBar, NULL, NULL, NULL, NULL, TRUE);
+    btnsize[0] = 64*scrx/700; btnsize[1] = 32*scry/400;
+    btnsize[2] = scrx*9/120; btnsize[3] = 8*scry/100;
+    if(!mode){
+        MoveWindow(hedi0, btnsize[0], CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
+        MoveWindow(hbtn_ok, btnsize[0]*5, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+        MoveWindow(hbtn_abort, btnsize[0]*6, CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+        MoveWindow(hbtn_clr, btnsize[0]*7, CmdBar_Height, btnsize[0]*5/2, btnsize[1], TRUE);
+        MoveWindow(hedi_out, scrx/20, scry*9/40+CmdBar_Height+btnsize[3], scrx*9/10, scry*29/40-btnsize[3], TRUE);
+        nbpos[0] = scrx/20; nbpos[1] = scry*9/40+CmdBar_Height;
+    }else{
+        MoveWindow(hedi0, btnsize[0], CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
+        MoveWindow(hedi1, btnsize[0]*6, CmdBar_Height, btnsize[0]*4, btnsize[1], TRUE);
+        MoveWindow(hedi2, btnsize[0], btnsize[1]+CmdBar_Height, btnsize[0]*2, btnsize[1], TRUE);
+        MoveWindow(hbtn_ok, btnsize[0]*3, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+        MoveWindow(hbtn_abort, btnsize[0]*4, btnsize[1]+CmdBar_Height, btnsize[0], btnsize[1], TRUE);
+        MoveWindow(hbtn_clr, btnsize[0]*5, btnsize[1]+CmdBar_Height, btnsize[0]*5/2, btnsize[1], TRUE);
+        MoveWindow(hedi_out, scrx/20, scry*3/10+CmdBar_Height+btnsize[3], scrx*9/10, scry*13/20-btnsize[3], TRUE);
+        nbpos[0] = scrx/20; nbpos[1] = scry*3/10+CmdBar_Height;
+    }
+    MoveWindow(hbtn_0, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_1, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_2, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_3, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_4, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_5, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_6, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_7, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_8, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_9, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_BS, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+    nbpos[0]+=btnsize[2];
+    MoveWindow(hbtn_CE, nbpos[0], nbpos[1], btnsize[2], btnsize[3], TRUE);
+
+    DeleteObject(hBitmap);
+    hBitmap = CreateCompatibleBitmap(hdc=GetDC(hwnd), scrx, scry);
+    ReleaseDC(hwnd, hdc);
+    SelectObject(hMemDC, hBitmap); // 新サイズの Bitmap を Memory Device Context に設定
+    InvalidateRect(hwnd, NULL, FALSE);
+    return;
+}
+
 void Paint(){
     GetClientRect(hwnd, &rect);
-    SelectObject(hMemDC, hPen); // デバイスコンテキストとペンをつなぐ
-    SelectObject(hMemDC, hBrush); // デバイスコンテキストとブラシをつなぐ
+    SelectObject(hMemDC, hPen); // デバイスコンテキストにペンを設定
+    SelectObject(hMemDC, hBrush); // デバイスコンテキストにブラシを設定
     Rectangle(hMemDC, rect.left, rect.top, rect.right, rect.bottom); // 領域いっぱいに四角形を描く
 
     if(!mode){
@@ -1073,7 +1207,7 @@ void Paint(){
         SetTextColor(hMemDC, RGB(0, 0, 0));
         SelectObject(hMemDC, hFnote); // デバイスコンテキストにフォントを設定
         rect.right=btnsize[0]; rect.bottom=btnsize[1];
-        DrawText(hMemDC, TEXT("自然数:"), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        DrawText(hMemDC, tcmes[18], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }else{
         SelectObject(hMemDC, hPenSys);
         SelectObject(hMemDC, hBshSys);
@@ -1085,11 +1219,11 @@ void Paint(){
         SetTextColor(hMemDC, RGB(0, 0, 0));
         SelectObject(hMemDC, hFnote);
         rect.right=btnsize[0]; rect.bottom=btnsize[1];
-        DrawText(hMemDC, TEXT("最小値:"), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        DrawText(hMemDC, tcmes[19], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         rect.left=btnsize[0]*5; rect.right=btnsize[0]*6;
-        DrawText(hMemDC, TEXT("最大値:"), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        DrawText(hMemDC, tcmes[20], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         rect.left=0; rect.top=btnsize[1]; rect.bottom=btnsize[1]*2; rect.right=btnsize[0];
-        DrawText(hMemDC, TEXT("個数上限:"), -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+        DrawText(hMemDC, tcmes[21], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     }
 
     SetBkMode(hMemDC, OPAQUE);
@@ -1098,37 +1232,15 @@ void Paint(){
     SelectObject(hMemDC, hMesFont);
     rect.left=0; rect.right=scrx;
     if(!mode){
-        rect.top=btnsize[1];
-        rect.bottom=scry/3-btnsize[3];
+        rect.top = btnsize[1];
+        rect.bottom = scry*9/40;
     }else{
-        rect.top=btnsize[1]*2;
-        rect.bottom=scry*4/9-btnsize[3];
+        rect.top = btnsize[1]*2;
+        rect.bottom = scry*3/10;
     }
-    if(working){
-        DrawText( 
-            hMemDC, 
-            TEXT("計算中です..."), 
-            -1, 
-            &rect, 
-            DT_CENTER | DT_VCENTER | DT_SINGLELINE
-        );
-    }else if(!mode){
-        DrawText(
-            hMemDC,
-            TEXT("自然数を素因数分解します"),
-            -1,
-            &rect,
-            DT_CENTER | DT_VCENTER | DT_SINGLELINE
-        );
-    }else if(mode){
-        DrawText(
-            hMemDC,
-            TEXT("指定範囲・個数で素数を探します"),
-            -1,
-            &rect,
-            DT_CENTER | DT_VCENTER | DT_SINGLELINE
-        );
-    }
+    if(working) DrawText(hMemDC, tcmes[22], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    else if(!mode) DrawText(hMemDC, tcmes[23], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    else if(mode) DrawText(hMemDC, tcmes[24], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
     rect.left=0; rect.right=scrx; rect.top=0; rect.bottom=scry;
     
     hdc = BeginPaint(hwnd, &ps);
@@ -1137,54 +1249,32 @@ void Paint(){
     return;
 }
 
-void ChangeBackgroundColor(){
-    static short r=0, g=255, b=255;
-    if (b<=0 && g<255) g=g+4; //
-    if (g>=255 && r>0) r=r-4; //
-    if (r<=0 && b<255) b=b+4; //
-    if (b>=255 && g>0) g=g-4; //
-    if (g<=0 && r<255) r=r+4; //
-    if (r>=255 && b>0) b=b-4; //
-                              //
-    if (r>255) r=255;         //
-    if (r<0) r=0;             //
-    if (g>255) g=255;         //
-    if (g<0) g=0;             //
-    if (b>255) b=255;         //
-    if (b<0) b=0;             //
-    DeleteObject(hBrush);
-    DeleteObject(hPen);
-    hBrush = CreateSolidBrush(RGB(r, g, b)); // rgbブラシを作成(塗りつぶし用)
-    hPen = CreatePen(PS_SOLID, 1, RGB(r, g, b)); // rgbペンを作成(輪郭用)
-    InvalidateRect(hwnd, NULL, FALSE);
-    return;
-}
-
-DWORD WINAPI PrimeFactorization(LPVOID arg) {
+DWORD WINAPI PrimeFactorization(LPVOID lpParameter){
     LONGLONG N=num[0], cnt=0, i=2;
-    bool chk=0;
-    TCHAR wcresult[1024] = TEXT(""), wcstr[1024] = TEXT("");
+    bool chk=false;
+    TCHAR tcresult[1024] = TEXT(""), tcstr[1024] = TEXT("");
 
     if(N<=0) { // 無効な値だった場合
-        SetWindowText(hwnd, wcmes[0]);
-        MessageBox(hwnd, TEXT("無効な値が入力されました｡\n自然数(正整数)を入力しているか確認してください｡\n大きすぎる数を入力した場合も､このエラーが発生する場合があります｡"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
-        OutputInEditbox(hedi_out, TEXT("エラー: 無効な値(自然数のみ対応)\r\n"));
+        wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+        SetWindowText(hwnd, tcstr);
+        MessageBox(hwnd, tcmes[25], tcmes[12], MB_OK | MB_ICONWARNING);
+        OutputToEditbox(hedi_out, tcmes[26]);
         working = false;
         EnableWindow(hbtn_ok, TRUE);
         EnableWindow(hedi0, TRUE);
         EnableWindow(hbtn_abort, FALSE);
-        EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
+        EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
         InvalidateRect(hwnd, NULL, FALSE);
         SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-        SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+        if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
         return 0;
     }
 
-    //計算
+    // 計算
     while(1){
         while(i<=N){
-            if(threadcancelled) break;
+            if(aborted) break;
             if(N%i==0 && N!=i){
                 chk=true;
                 break;
@@ -1196,85 +1286,84 @@ DWORD WINAPI PrimeFactorization(LPVOID arg) {
             if(i==2) i++;
             else i+=2;
            }
-        if(threadcancelled) break;
+        if(aborted) break;
         if(chk){
-            wsprintf(wcstr, TEXT("%I64dx"), i); // 見つけた素因数を文字列に変換・「x」を足す
-            wcscat(wcresult, wcstr); // 結果文字列に追加
+            wsprintf(tcstr, TEXT("%I64dx"), i); // 見つけた素因数を文字列に変換・「x」を足す
+            _tcscat(tcresult, tcstr); // 結果文字列に追加
         }else{
-            wsprintf(wcstr, TEXT("%I64d"), N); // その数自身を文字列に変換(素数だった場合)
-            wcscat(wcresult, wcstr); // 結果文字列に追加
+            wsprintf(tcstr, TEXT("%I64d"), N); // その数自身を文字列に変換(素数だった場合)
+            _tcscat(tcresult, tcstr); // 結果文字列に追加
             break;
         }
         N/=i;
         cnt++;
     }
-    if(cnt==0 && N>1) wcscat(wcresult, TEXT(" (素数)")); // 素数だった場合、その旨を追加
+    if(cnt==0 && N>1) _tcscat(tcresult, tcmes[27]); // 素数だった場合、その旨を追加
 
-    if (threadcancelled) { // 計算中断が押された場合の処理
+    if(aborted){ // 計算中断が押された場合の処理
         working = false;
         EnableWindow(hbtn_ok, TRUE);
         EnableWindow(hedi0, TRUE);
         EnableWindow(hbtn_abort, FALSE);
-        EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
+        EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
-        SetWindowText(hwnd, wcmes[0]);
+        wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+        SetWindowText(hwnd, tcstr);
         SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-        threadcancelled = false;
-        if(!quitting) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+        aborted = false;
+        if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
         return 0;
     }
 
     // 結果文字列の生成
-    wsprintf(wcstr, TEXT("結果: %I64d = %s"), num[0], wcresult);
+    wsprintf(tcstr, TEXT("%s%I64d = %s"), tcmes[28], num[0], tcresult);
     
     // update the Window's title and the result box
-    OutputInEditbox(hedi_out, wcstr);
+    OutputToEditbox(hedi_out, tcstr);
     SendMessage(hedi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n")); // 続けて書き込むならこの1行だけで良い
-    wcscat(wcstr, TEXT(" - 素因数分解プログラム"));
-    SetWindowText(hwnd, wcstr);
+    wsprintf(tcresult, TEXT(" - %s"), tcmes[0]);
+    _tcscat(tcstr, tcresult);
+    SetWindowText(hwnd, tcstr);
 
     working = false;
     EnableWindow(hbtn_ok, TRUE);
     EnableWindow(hedi0, TRUE);
     EnableWindow(hbtn_abort, FALSE);
-    EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
+    EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);
-    if(!quitting) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
     return 0;
 }
 
-DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
+DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
     LONGLONG cnt=0, i, j;
     DWORD ret;
-    TCHAR wcresult[1024] = TEXT(""), wcstr[1024] = TEXT(""), strFile[MAX_PATH+1] = TEXT("");
-    CHAR cresult[1024] = "", cstr[1024] = "";
+    TCHAR tcresult[1024] = TEXT(""), tcstr[1024] = TEXT(""), strFile[MAX_PATH] = TEXT("");
+    CHAR cresult[1024] = "", cstr[1024] = "", cmes[1024];
     HANDLE hfile = NULL;
     OPENFILENAME ofn = {0};
 
     // 入力値を調整(主に空or"0"の時の対応)
     if(num[0]<2) num[0]=2;
     if(num[0]!=2 && !(num[0]%2)) num[0]++;
-    if(num[1]<1) num[1]=MAXLONGLONG;
-    if(num[2]<1 || onlycnt) num[2]=MAXLONGLONG;
+    if(num[1]<1) num[1]=0x7fffffffffffffff;
+    if(num[2]<1 || onlycnt) num[2]=0x7fffffffffffffff;
     if(num[1]-num[0]<1) { // 無効な値だった場合
-        SetWindowText(hwnd, wcmes[0]);
-        MessageBox(hwnd, TEXT("無効な値が入力されました｡\n大きすぎる数を入力した場合も､このエラーが発生する場合があります｡"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
-        OutputInEditbox(hedi_out, TEXT("エラー: 無効な値\r\n"));
+        wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+        SetWindowText(hwnd, tcstr);
+        MessageBox(hwnd, tcmes[29], tcmes[12], MB_OK | MB_ICONWARNING);
+        OutputToEditbox(hedi_out, tcmes[30]);
         FinalizeErrorLPN();
         return 0;
     }
 
     // 個数上限が大きいときの対応
     if(num[2]>1000 && !usefile && !onlycnt){
-        if(IDYES == MessageBox(hwnd,
-            TEXT("個数上限が大きく、エディットボックスに結果が収まらない可能性があります。\n代わりにテキストファイル出力が選択されますが、続行しますか？"),
-            TEXT("確認"),
-            MB_YESNO | MB_ICONINFORMATION)
-            ) {
-            usefile=1;
-            CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MFS_CHECKED);
+        if(IDYES == MessageBox(hwnd, tcmes[31], tcmes[32], MB_YESNO | MB_ICONINFORMATION)){
+            usefile = true;
+            CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
         }else{
             FinalizeErrorLPN();
             return 0;
@@ -1290,10 +1379,11 @@ DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
         ofn.lpstrFile = strFile;
         ofn.nMaxFile = MAX_PATH;
         ofn.lpstrDefExt = TEXT(".txt");
-        ofn.lpstrTitle = TEXT("結果の出力先指定");
-        ofn.Flags = ( overwrite ? OFN_OVERWRITEPROMPT : NULL); // 既存ファイルの場合、上書きモードのときのみ警告
+        ofn.lpstrTitle = tcmes[33];
+        ofn.Flags = (overwrite ? OFN_OVERWRITEPROMPT : NULL); // 既存ファイルの場合、上書きモードのときのみ警告
         if(!GetSaveFileName(&ofn)){
-            SetWindowText(hwnd, wcmes[0]);
+            wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+            SetWindowText(hwnd, tcstr);
             FinalizeErrorLPN();
             return 0;
         }
@@ -1307,70 +1397,76 @@ DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
             FILE_ATTRIBUTE_NORMAL,
             NULL);
         if(hfile == INVALID_HANDLE_VALUE){
-            SetWindowText(hwnd, wcmes[0]);
-            MessageBox(hwnd, TEXT("ファイルの作成またはオープンに失敗しました。\n書き込み禁止になっていないかを確認してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
-            OutputInEditbox(hedi_out, TEXT("エラー: ファイルの作成またはオープンに失敗\r\n"));
+            wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+            SetWindowText(hwnd, tcstr);
+            MessageBox(hwnd, tcmes[11], tcmes[12], MB_OK | MB_ICONWARNING);
+            OutputToEditbox(hedi_out, tcmes[34]);
             FinalizeErrorLPN();
             return 0;
         }
         if( (ret=SetFilePointer(hfile, 0, NULL, FILE_END)) ){ // ファイル末尾にFile Pointerを移動 & 途中か初めからか判定
             if(ret==0xFFFFFFFF){
-                SetWindowText(hwnd, wcmes[0]);
-                MessageBox(hwnd, TEXT("ファイルポインタの設定に失敗しました。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
-                OutputInEditbox(hedi_out, TEXT("エラー: テキストファイル出力失敗\r\n"));
+                wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+                SetWindowText(hwnd, tcstr);
+                MessageBox(hwnd, tcmes[35], tcmes[12], MB_OK | MB_ICONWARNING);
+                OutputToEditbox(hedi_out, tcmes[36]);
                 CloseHandle(hfile);
                 FinalizeErrorLPN();
                 return 0;
             }
-            WriteFile(hfile, "\r\n\r\n", strlen("\r\n\r\n")*sizeof(CHAR), NULL, NULL); // 追記なら2回改行
+            WriteFile(hfile, "\r\n\r\n", strlen("\r\n\r\n")*sizeof(CHAR), &dwtemp, NULL); // 追記なら2回改行
         }
     }
 
-    if(!onlycnt && !usefile) OutputInEditbox(hedi_out, TEXT("結果: "));
+    if(!onlycnt && !usefile) OutputToEditbox(hedi_out, tcmes[28]);
     else if(!onlycnt && usefile){
-        if(!WriteFile(hfile, "結果: ", strlen("結果: ")*sizeof(CHAR), NULL, NULL)){
-            SetWindowText(hwnd, wcmes[0]);
-            MessageBox(hwnd, TEXT("出力ファイルへの書き込みに失敗しました。\n別のパスで再試行してください。"), TEXT("エラー"), MB_OK | MB_ICONWARNING);
-            OutputInEditbox(hedi_out, TEXT("エラー: テキストファイル書き込み失敗\r\n"));
+        WideCharToMultiByte(932, NULL, tcmes[28], lstrlen(tcmes[28]), cmes,
+            WideCharToMultiByte(932, NULL, tcmes[28], lstrlen(tcmes[28]), NULL, 0, NULL, NULL), // 変換後文字数取得
+            NULL, NULL);
+        if(!WriteFile(hfile, cmes, strlen(cmes)*sizeof(CHAR), &dwtemp, NULL)){
+            wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
+            SetWindowText(hwnd, tcstr);
+            MessageBox(hwnd, tcmes[15], tcmes[12], MB_OK | MB_ICONWARNING);
+            OutputToEditbox(hedi_out, tcmes[37]);
             CloseHandle(hfile);
             FinalizeErrorLPN();
             return 0;
         }
-        OutputInEditbox(hedi_out, TEXT("計算結果をテキストファイルに出力しています...\r\n"));
+        OutputToEditbox(hedi_out, tcmes[38]);
     }
 
     // 計算
     for(i=num[0]; i<=num[1] && cnt<num[2]; i++){
         for(j=2; j<=i; j++) {
-            if(threadcancelled) break;
+            if(aborted) break;
             if(i%j==0 && i!=j) break;
             if(i/j<j || i==j) {
                 if(!onlycnt){
-                    wcresult[0] = L'\0'; cresult[0] = '\0';
+                    tcresult[0] = L'\0'; cresult[0] = '\0';
                     if(cnt){
-                        wsprintf(wcresult, TEXT(", %I64d"), i);
+                        wsprintf(tcresult, TEXT(", %I64d"), i);
                         if(usefile) sprintf(cresult, ", %I64d", i);
                     }else{
-                        wsprintf(wcresult, TEXT("%I64d"), i);
+                        wsprintf(tcresult, TEXT("%I64d"), i);
                         if(usefile) sprintf(cresult, "%I64d", i);
                     }
-                    if(usefile) WriteFile(hfile, cresult, strlen(cresult)*sizeof(CHAR), NULL, NULL);
-                    else OutputInEditbox(hedi_out, wcresult);
+                    if(usefile) WriteFile(hfile, cresult, strlen(cresult)*sizeof(CHAR), &dwtemp, NULL);
+                    else OutputToEditbox(hedi_out, tcresult);
                 }
                 cnt++;
                 break;
             }
             if(j!=2) j++; // 2以外ならもう1つ更に増やす
         }
-        if(threadcancelled) break;
+        if(aborted) break;
         if(i!=2) i++; // 2以外ならもう1つ更に増やす
     }
 
     // 計算中断が押された場合の処理
-    if(threadcancelled) {
-        if(!onlycnt && !usefile) OutputInEditbox(hedi_out, TEXT("\r\n"));
+    if(aborted) {
+        if(!onlycnt && !usefile) OutputToEditbox(hedi_out, TEXT("\r\n"));
         else if(!onlycnt && usefile){
-            WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), NULL, NULL);
+            WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), &dwtemp, NULL);
             CloseHandle(hfile);
         }
         FinalizeErrorLPN();
@@ -1378,19 +1474,23 @@ DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
     }
 
     // 最後の出力など
-    if(!onlycnt && !usefile) OutputInEditbox(hedi_out, TEXT("\r\n"));
-    else if(!onlycnt && usefile) WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), NULL, NULL);
-    wsprintf(wcstr, TEXT("合計個数: %I64d (範囲: %I64d以上%I64d以下, 個数上限: %I64d)"), cnt, num[0], num[1], num[2]);
+    if(!onlycnt && !usefile) OutputToEditbox(hedi_out, TEXT("\r\n"));
+    else if(!onlycnt && usefile) WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), &dwtemp, NULL);
+    wsprintf(tcstr, tcmes[39], cnt, num[0], num[1], num[2]);
+    WideCharToMultiByte(932, NULL, tcmes[39], lstrlen(tcmes[39]), cmes,
+        WideCharToMultiByte(932, NULL, tcmes[39], lstrlen(tcmes[39]), NULL, 0, NULL, NULL), // 変換後文字数取得
+        NULL, NULL);
     if(!onlycnt && usefile){
-        sprintf(cstr, "合計個数: %I64d (範囲: %I64d以上%I64d以下, 個数上限: %I64d)", cnt, num[0], num[1], num[2]);
-        WriteFile(hfile, cstr, strlen(cstr)*sizeof(CHAR), NULL, NULL);
-        WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), NULL, NULL);
+        sprintf(cstr, cmes, cnt, num[0], num[1], num[2]);
+        WriteFile(hfile, cstr, strlen(cstr)*sizeof(CHAR), &dwtemp, NULL);
+        WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), &dwtemp, NULL);
         CloseHandle(hfile);
     }
-    OutputInEditbox(hedi_out, wcstr);
+    OutputToEditbox(hedi_out, tcstr);
     SendMessage(hedi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n")); // '\r': CR, '\n': LF
-    wcscat(wcstr, TEXT(" - 素因数分解プログラム"));
-    SetWindowText(hwnd, wcstr);
+    wsprintf(tcresult, TEXT(" - %s"), tcmes[0]);
+    _tcscat(tcstr, tcresult);
+    SetWindowText(hwnd, tcstr);
 
     working = false;
     EnableWindow(hbtn_ok, TRUE);
@@ -1398,10 +1498,10 @@ DWORD WINAPI ListPrimeNumbers(LPVOID arg) {
     EnableWindow(hedi1, TRUE);
     if(!onlycnt) EnableWindow(hedi2, TRUE);
     EnableWindow(hbtn_abort, FALSE);
-    EnableMenuItem(hmenu, 1, MF_BYPOSITION | MFS_ENABLED); // 「オプション」メニューを再度有効化
+    EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-    SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     return 0;
 }

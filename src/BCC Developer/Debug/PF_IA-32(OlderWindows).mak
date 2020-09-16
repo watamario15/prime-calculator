@@ -9,9 +9,9 @@ CFLAG=-W  -3 -Od -w -AT -pc -H- -k -b -v -y -WU -DDEBUG
 OUTDIR=-nDebug
 CINCS=
 TARGET=Debug\PF_IA-32(OlderWindows).exe
-SRC1="C:\Users\watamario\Documents\Git-Local-Repo\Prime-Factorizarion-Win32API\src\BCC Developer\1.cpp"
+SRC1="C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\BCC Developer\1.cpp"
 OBJ1=Debug\1.obj
-RC1="C:\Users\watamario\Documents\Git-Local-Repo\Prime-Factorizarion-Win32API\src\BCC Developer\resource.rc"
+RC1="C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\BCC Developer\resource.rc"
 RES1=Debug\resource.res
 RESINCS=-i"C:\Program Files (x86)\bcc\borland\bcc55\Include"
 

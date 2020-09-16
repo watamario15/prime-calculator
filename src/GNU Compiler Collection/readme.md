@@ -1,5 +1,7 @@
 # 素因数分解プログラム Ver. 2β2 GNU Compiler Collection版ソースコード
-Windows PC用のソースコードです。
+This document is also available in [English](readme_en.md).
+
+**Windows PC**用のソースコードです。
 
 # ビルド時の要件
 GCCを使える環境を整えたうえで、ビルド用のバッチファイルを環境に合わせて書き換えてビルドしてください(特にパス周り)。

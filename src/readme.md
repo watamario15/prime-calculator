@@ -1,4 +1,6 @@
 # 各ソースコードについて
+This document is also available in [English](readme_en.md).
+
 以下がWindows PC用のプロジェクトです。
 - Visual Studio 2019
 - GNU Compiler Collection

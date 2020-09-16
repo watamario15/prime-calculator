@@ -1,4 +1,6 @@
 # 素因数分解プログラム Ver. 2β2 GNU Compiler Collection版ソースコード
+This document is also available in [English](readme_en.md).
+
 **Windows PC**用のソースコードです。
 
 # ビルド時の要件

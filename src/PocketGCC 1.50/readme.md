@@ -1,5 +1,7 @@
 # 素因数分解プログラム Ver. 2β2 Visual Studio 2019版ソースコード
 **Windows PC**用のソースコードです。
+This document is also available in [English](readme_en.md).
+
 
 # ビルド時の要件
 このプロジェクトは、**Visual Studio Enterprise 2019**で作成されています。

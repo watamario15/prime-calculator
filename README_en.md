@@ -1,4 +1,6 @@
 # Prime Factorization Software w/ Win32 API
+この文書には[日本語版](README.md)もあります。
+
 This software performs prime factorization and looking up prime numbers in a specified range.
 
 First, the most simple algorithm is this.
@@ -123,6 +125,8 @@ Changed the behavior of the screen keyboard to enter numbers where a cursor exis
 You can now enter numbers with qwerty... keys (WinCE).
 
 Improved English sentences (WinCE).
+
+Started to build for CPUs other than ARMv4I. (WinCE)
 
 ## v1 (5/24/2019)
 First release.

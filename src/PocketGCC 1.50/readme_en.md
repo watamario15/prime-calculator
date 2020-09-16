@@ -1,4 +1,6 @@
 # Prime Factorization Software Ver. 2 beta2 Source Code for PocketGCC 1.50
+この文書には[日本語版](readme.md)もあります。
+
 This source code is for **Windows CE (ARMv4I)**.
 
 # Requirements

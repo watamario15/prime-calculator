@@ -1,5 +1,4 @@
 # 各ソースコードについて
-
 以下がWindows PC用のプロジェクトです。
 - Visual Studio 2019
 - GNU Compiler Collection

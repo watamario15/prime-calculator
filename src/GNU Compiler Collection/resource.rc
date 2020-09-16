@@ -117,7 +117,7 @@ Res_EnglishMenu MENU
         MENUITEM SEPARATOR
         MENUITEM "Display only &number of prime numbers", 2060
         MENUITEM "Output to a &text file", 2061
-        MENUITEM "Over&write a existing file", 2062
+        MENUITEM "Over&write an existing file", 2062
         MENUITEM SEPARATOR
         POPUP "&Language"
         {

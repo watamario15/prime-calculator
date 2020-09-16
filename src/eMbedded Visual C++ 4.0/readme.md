@@ -1,8 +1,8 @@
 # 素因数分解プログラム Ver. 2β2 eMbedded Visual C++ 4.0版ソースコード
-Windows CE用のソースコードです。
+**Windows CE**用のソースコードです。
 
 # ビルド時の要件
-このプロジェクトは、eMbedded Visual C++ 4.0でビルド可能です。[開発環境構築 | Brain Wiki | Fandom](https://brain.fandom.com/ja/wiki/%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89)などを参考にしてインストールしてください。
+このプロジェクトは、**eMbedded Visual C++ 4.0**でビルド可能です。[開発環境構築 | Brain Wiki | Fandom](https://brain.fandom.com/ja/wiki/%E9%96%8B%E7%99%BA%E7%92%B0%E5%A2%83%E6%A7%8B%E7%AF%89)などを参考にしてインストールしてください。
 
 ただし、このIDEはWindows 2000とXPでしか動かないという代物です。
 

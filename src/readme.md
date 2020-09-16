@@ -1,12 +1,12 @@
 # 各ソースコードについて
 This document is also available in [English](readme_en.md).
 
-以下がWindows PC用のプロジェクトです。
+以下が**Windows PC**用のプロジェクトです。
 - Visual Studio 2019
 - GNU Compiler Collection
 - BCC Developer
 
-以下がWindows CE用のプロジェクトです。
+以下が**Windows CE**用のプロジェクトです。
 - eMbedded Visual C++ 4.0
 - PocketGCC 1.50
 

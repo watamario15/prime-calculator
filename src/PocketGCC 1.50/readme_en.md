@@ -1,4 +1,4 @@
-# Prime Factorization Software Ver. 2 beta2 Source Code for PocketGCC 1.50
+# Prime Factorization Software Ver. 2 beta3 Source Code for PocketGCC 1.50
 この文書には[日本語版](readme.md)もあります。
 
 This source code is for **Windows CE (ARMv4I)**.
@@ -11,6 +11,6 @@ I use commctrl.lib copied from eMbedded Visual C++ 4.0 to compile. This file is 
 This compiler **doesn't support source files includes other than English characters**. If you want to build software including such strings, make them in the String Table of a resource script, or use another compiler like eMbedded Visual C++ 4.0.
 
 # Notes
-The source code is "**win.cpp**," the resource script is "**resource.rc**," the icon is "**app.ico**," and the batch file is "**WINBUILD.BAT**."
+The source code is "**win.cpp**", the resource script is "**resource.rc**", the icon is "**app.ico**", and the batch file is "**WINBUILD.BAT**".
 
 The executable binary file will be generated as "**AppMain.exe**."

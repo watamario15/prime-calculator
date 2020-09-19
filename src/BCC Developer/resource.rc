@@ -5,7 +5,7 @@
 //
 
 VS_VERSION_INFO    VERSIONINFO
-FILEVERSION     2, 0, 0, 1
+FILEVERSION     2, 0, 0, 2
 FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
 FILEFLAGS       0
 FILEOS          VOS_NT_WINDOWS32
@@ -17,21 +17,21 @@ FILETYPE        VFT_APP
         {
             VALUE "Comments",         "素数関連の計算を行うシンプルなフリーソフトウェアです。1～9223372036854775807の自然数に対応しています。\0"
             VALUE "FileDescription",  "素因数分解プログラム\0"
-            VALUE "FileVersion",      "2β2\0"
+            VALUE "FileVersion",      "2β3\0"
             VALUE "InternalName",     "Prime Factorization\0"
             VALUE "LegalCopyright",   "Copyright (C) 2018-2020 watamario All rights reserved.\0"
             VALUE "ProductName",      "素因数分解 for Windows PC\0"
-            VALUE "ProductVersion",   "2β2\0"
+            VALUE "ProductVersion",   "2β3\0"
         }
         BLOCK "040904b0"
         {
             VALUE "Comments",         "This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\0"
             VALUE "FileDescription",  "Prime Factorization Software\0"
-            VALUE "FileVersion",      "2 beta2\0"
+            VALUE "FileVersion",      "2 beta3\0"
             VALUE "InternalName",     "Prime Factorization\0"
             VALUE "LegalCopyright",   "Copyright (C) 2018-2020 watamario All rights reserved.\0"
             VALUE "ProductName",      "Prime Factorization for Windows PC\0"
-            VALUE "ProductVersion",   "2 beta2\0"
+            VALUE "ProductVersion",   "2 beta3\0"
         }
     }
     BLOCK "VarFileInfo"
@@ -139,7 +139,7 @@ STRINGTABLE
     // Japanese
     1000 "素因数分解プログラム"
 
-    1001 "素因数分解 for Windows PC Ver. 2β2\n\
+    1001 "素因数分解 for Windows PC Ver. 2β3\n\
 素数関連の計算を行うシンプルなフリーソフトウェアです。\
 1～9223372036854775807の自然数に対応しています。\n\
 製作者は、このソフトウェアの使用によって発生した計算結果の誤り、バグ等による誤動作を含むいかなる損害に対しても補償致しません。自己責任でご利用ください。\n\n"
@@ -237,12 +237,14 @@ STRINGTABLE
     1042 "CPUアーキテクチャ: "
 
     1043 "ビルド日時: "
+    
+    1044 "[中断] 合計個数: %I64d以上 (範囲: %I64d以上%I64d以下, 個数上限: %I64d)\r\n"
 
 
     // English
     1100 "Prime Factorization Software"
 
-    1101 "Prime Factorization for SHARP Brain Ver. 2 beta2\n\
+    1101 "Prime Factorization for SHARP Brain Ver. 2 beta3\n\
 This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\n\
 The author won't take any responsibility for any damages by using this software. Please use this software under your responsibility.\n\n"
 
@@ -339,4 +341,6 @@ You can switch to the Prime Factorization feature in the options menu."
     1142 "CPU architecture: "
 
     1143 "Build date: "
+    
+    1144 "[Aborted] Number of found prime numbers: More than %I64d (Range: Between %I64d and %I64d, Limitation: %I64d)"
 }

@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2β2 BCC Developer版ソースコード
+# 素因数分解プログラム Ver. 2β3 BCC Developer版ソースコード
 This document is also available in [English](readme_en.md).
 
 **Windows PC**用のソースコードです。

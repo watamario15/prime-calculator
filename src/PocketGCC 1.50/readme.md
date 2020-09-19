@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2β PocketGCC 1.50版ソースコード
+# 素因数分解プログラム Ver. 2β3 PocketGCC 1.50版ソースコード
 This document is also available in [English](readme_en.md).
 
 **Windows CE**用のソースコードです。

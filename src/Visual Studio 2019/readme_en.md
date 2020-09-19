@@ -1,4 +1,4 @@
-# Prime Factorization Software Ver. 2 beta2 Source Code for Visual Studio 2019
+# Prime Factorization Software Ver. 2 beta3 Source Code for Visual Studio 2019
 この文書には[日本語版](readme.md)もあります。
 
 This source code is for **Windows PC**.
@@ -10,7 +10,7 @@ This project uses the **v141_xp build set, which supports Windows XP**, and **AR
 
 If you don't want to or can't install them, you can disable the Windows XP support by the following procedure. 
 
->Open "**Project -> Properties**," and switch the "**Construction**" to "**All Constructions**" and the "**Platform**" to "**All Platforms**." Then, change the following items.
+>Open "**Project -> Properties**", and switch the "**Construction**" to "**All Constructions**" and the "**Platform**" to "**All Platforms**". Then, change the following items.
 >
 >1. Change "**General -> Platform Toolset**" to "**Visual Studio 2019 (v142)**"\*.
 >1. Press OK and close. Then, reopen the properties page.
@@ -22,6 +22,6 @@ If you don't want to or can't install them, you can disable the Windows XP suppo
 \*Since I use the Japanese version of Visual Studio, the name of the items might be different.
 
 # Notes
-The source code is "**1.cpp**," the resource script is "**resource.rc**," and the icon is "**app.ico**." You can edit and build by opening "**PrimeFactorization.sln**" if you use Visual Studio.
+The source code is "**1.cpp**," the resource script is "**resource.rc**," and the icon is "**app.ico**". You can edit and build by opening "**PrimeFactorization.sln**" if you use Visual Studio.
 
-Executable binary files will be generated as "**PF_(Target CPU).exe**" in the "**Release / Debug**" folder in "**Win32**" for x86(32-bit), "**x64**" for x86(64-bit), "**ARM**" for ARM(32-bit), and "**ARM64**" for ARM(64-bit). The "Release" folder is for release builds, and "Debug" folder is for debug builds.
+Executable binary files will be generated as "**PF_(Target CPU).exe**" in the "**Release / Debug**" folder in "**Win32**" for x86(32-bit), "**x64**" for x86(64-bit), "**ARM**" for ARM(32-bit), and "**ARM64**" for ARM(64-bit). The "**Release**" folder is for release builds, and "**Debug**" folder is for debug builds.

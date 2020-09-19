@@ -44,7 +44,7 @@
 
 #define WND_CLASS_NAME TEXT("My_Window")
 #define TIMER_AWAIT 250
-#define NUMOFSTRINGTABLE 46 // String Table に含まれる文字列の数
+#define NUMOFSTRINGTABLE 47 // String Table に含まれる文字列の数
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
 
 HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hbtn_0, hbtn_1, hbtn_2, hbtn_3, hbtn_4, hbtn_5, hbtn_6, hbtn_7, hbtn_8, hbtn_9, hbtn_CE, hbtn_BS, hedi0, hedi1, hedi2, hedi_out, hCmdBar, hwnd_temp, hwnd_focused;
@@ -53,7 +53,7 @@ HMENU hmenu;
 MENUITEMINFO mii;
 HACCEL hAccel;
 OPENFILENAME ofn;
-DWORD dThreadID;
+DWORD dThreadID, dwtemp;
 HANDLE hThread, hFile;
 HDC hdc, hMemDC;
 HFONT hMesFont, hFbtn, hFedi, hFnote; // 作成するフォント
@@ -63,11 +63,10 @@ HPEN hPen, hPenSys; // 取得するペン
 PAINTSTRUCT ps;
 RECT rect;
 HBITMAP hBitmap;
-INT r=0, g=255, b=255, scrx=0, scry=0, editlen=0, btnsize[4], nbpos[2], CmdBar_Height;
+INT r=0, g=255, b=255, scrx=0, scry=0, editlen=0, btnsize[4], nbpos[2], CmdBar_Height, StoppingTimer=0;
 UINT menu[5];
-DWORD dwtemp;
 LONGLONG num[3]; // 入力値受付用変数
-bool aborted=false, TimerRestartable=true, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
+bool aborted=false, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
 TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[NUMOFSTRINGTABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
 CHAR cEdit[65540];
 WNDPROC wpedi0_old, wpedi1_old, wpedi2_old; // 元の Window Procedure のアドレス格納用変数
@@ -100,7 +99,8 @@ void FinalizeErrorLPN(){
     SetWindowText(hwnd, tcstr);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
     aborted = false;
-    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    StoppingTimer--;
+    if(!StoppingTimer) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     return;
 }
 
@@ -115,7 +115,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
     wcl.style = 0;
     wcl.hIcon = LoadIcon(hInstance, TEXT("Res_Icon")); // アイコンを読み込む
     wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcl.lpszMenuName = NULL;
+    wcl.lpszMenuName = 0;
     wcl.cbClsExtra = 0;
     wcl.cbWndExtra = 0;
     wcl.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -383,7 +383,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             CmdBar_Height = CommandBar_Height(hCmdBar);
             hmenu = CommandBar_GetMenu(hCmdBar, 0);
             CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-            CheckMenuRadioItem(hmenu, 2071, 2072, 2072, MF_BYCOMMAND);
+            CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
             EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
@@ -427,13 +427,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
         case WM_CLOSE: // 終了時
             KillTimer(hWnd, 1); // タイマーを止める
-            TimerRestartable = false;
+            StoppingTimer++;
             if(IDYES == MessageBox(hWnd, tcmes[7], tcmes[8], MB_YESNO | MB_ICONINFORMATION)){
-                KillTimer(hWnd, 1);
                 DestroyWindow(hWnd);
             }else{
-                SetTimer(hWnd, 1, TIMER_AWAIT, NULL); // タイマーを再開
-                TimerRestartable = true;
+                StoppingTimer--;
+                if(!StoppingTimer) SetTimer(hWnd, 1, TIMER_AWAIT, NULL); // タイマーを再開
                 SetFocus(hwnd_focused); // 直近までフォーカスが当たっていたエディットボックスにフォーカスを戻す
             }
             break;
@@ -481,6 +480,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     if(working) break;
                     working = true;
                     KillTimer(hWnd, 1);
+                    StoppingTimer++;
                     EnableWindow(hbtn_ok, FALSE);
                     EnableWindow(hedi0, FALSE);
                     EnableWindow(hedi1, FALSE);
@@ -809,15 +809,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
                 case 2101: // 使い方
                     KillTimer(hWnd, 1);
-                    TimerRestartable = false;
+                    StoppingTimer++;
                     MessageBox(hWnd, tcmes[(mode ? 3 : 2)], tcmes[16], MB_OK | MB_ICONINFORMATION);
-                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
-                    TimerRestartable = true;
+                    StoppingTimer--;
+                    if(!StoppingTimer) SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
                     break;
 
                 case 2109: // このプログラムについて
                     KillTimer(hWnd, 1);
-                    TimerRestartable = false;
+                    StoppingTimer++;
                     wsprintf(tctemp, TEXT("%s")
                         TEXT("%s") COMPILER_NAME TEXT("\n")
                         TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
@@ -826,8 +826,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         TEXT("\n(C) 2018-2020 watamario"),
                         tcmes[1], tcmes[40], tcmes[41], tcmes[42], tcmes[43]);
                     MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
-                    SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
-                    TimerRestartable = true;
+                    StoppingTimer--;
+                    if(!StoppingTimer) SetTimer(hWnd, 1, TIMER_AWAIT, NULL);
                     break;
             }
             if(LOWORD(wParam)>=10 && LOWORD(wParam)<20){ // 画面キーボード
@@ -866,6 +866,7 @@ LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                     if(!working && !mode){
                         working = true;
                         KillTimer(hwnd, 1);
+                        StoppingTimer++;
                         EnableWindow(hbtn_ok, FALSE);
                         EnableWindow(hedi0, FALSE);
                         EnableWindow(hedi1, FALSE);
@@ -988,6 +989,7 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                     if(!working){
                         working = true;
                         KillTimer(hwnd, 1);
+                        StoppingTimer++;
                         EnableWindow(hbtn_ok, FALSE);
                         EnableWindow(hedi0, FALSE);
                         EnableWindow(hedi1, FALSE);
@@ -1267,7 +1269,8 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter){
         CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
         InvalidateRect(hwnd, NULL, FALSE);
         SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-        if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+        StoppingTimer--;
+        if(!StoppingTimer) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
         return 0;
     }
 
@@ -1311,7 +1314,8 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter){
         SetWindowText(hwnd, tcstr);
         SendMessage(hwnd, APP_SETFOCUS, 0, 0);
         aborted = false;
-        if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+        StoppingTimer--;
+        if(!StoppingTimer) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
         return 0;
     }
 
@@ -1332,7 +1336,8 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter){
     EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);
-    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    StoppingTimer--;
+    if(!StoppingTimer) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
     return 0;
 }
@@ -1468,6 +1473,9 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
         else if(!onlycnt && usefile){
             WriteFile(hfile, "\r\n", strlen("\r\n")*sizeof(CHAR), &dwtemp, NULL);
             CloseHandle(hfile);
+        } else if(onlycnt){
+            wsprintf(tcstr, tcmes[46], cnt, num[0], num[1], num[2]);
+            OutputToEditbox(hedi_out, tcstr);
         }
         FinalizeErrorLPN();
         return 0;
@@ -1502,6 +1510,7 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
     CommandBar_DrawMenuBar(hCmdBar, 1); // メニュー再描画
     InvalidateRect(hwnd, NULL, FALSE);
     SendMessage(hwnd, APP_SETFOCUS, 0, 0);
-    if(TimerRestartable) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
+    StoppingTimer--;
+    if(!StoppingTimer) SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
     return 0;
 }

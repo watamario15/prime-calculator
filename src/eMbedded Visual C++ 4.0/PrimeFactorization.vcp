@@ -15,7 +15,7 @@
 # TARGTYPE "Win32 (WCE ARMV4T) Application" 0xa401
 # TARGTYPE "Win32 (WCE MIPSII) Application" 0xa101
 
-CFG=CEWindow - Win32 (WCE ARMV4I) Debug
+CFG=PrimeFactorization - Win32 (WCE ARMV4I) Release
 !MESSAGE これは有効なメイクファイルではありません。このプロジェクトをビルドするためには NMAKE を使用してください。
 !MESSAGE [メイクファイルのエクスポート] コマンドを使用して実行してください
 !MESSAGE 
@@ -24,7 +24,7 @@ CFG=CEWindow - Win32 (WCE ARMV4I) Debug
 !MESSAGE NMAKE の実行時に構成を指定できます
 !MESSAGE コマンド ライン上でマクロの設定を定義します。例 :
 !MESSAGE 
-!MESSAGE NMAKE /f "PrimeFactorization.vcn" CFG="PrimeFactorization - Win32 (WCE ARMV4I) Debug"
+!MESSAGE NMAKE /f "PrimeFactorization.vcn" CFG="PrimeFactorization - Win32 (WCE ARMV4I) Release"
 !MESSAGE 
 !MESSAGE 選択可能なビルド モード :
 !MESSAGE 

@@ -19,7 +19,7 @@ By the way, you can use this program as a **template to create your own GUI appl
 ## Windows PC
 **Microsoft Windows XP Service Pack 3 or newer (IA-32/AMD64/AArch32/AArch64)** is recommended.
 
-The "OlderWindows" version might work on older Windows.
+The "OlderWindows" version might work on older Windows versions.
 
 ## Windows CE
 I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMV4I)**.
@@ -27,7 +27,7 @@ I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMV4I)**.
 I compiled for CPUs that the IDE supports. However, since I don't have other devices, I can't test them.
 
 # How to run
-I put executable files in "bin_(Target Device)".
+I put executable files in "**bin_(Target Device)**".
 ## Windows PC
 Please use one which matches your computer.
 
@@ -39,35 +39,35 @@ Please use one which matches your computer.
 |      PF_AArch64.exe        |  64-bit (ARM)   |
 | PF_IA-32(OlderWindows).exe |  32-bit (x86)   |
 
-Some antimalware software like Avast! Antivirus wrongly detects a software compiled by Borland C++ Compiler as a malware. Since this problem, they might detect **PF_IA-32(OlderWindows).exe** as malware. In such cases, please restore from the chest and run. You can check the source code if you desire.
+Some antimalware software like Avast! Antivirus wrongly detects a software compiled by Borland C++ Compiler as a malware. Since this problem, they might detect "**PF_IA-32(OlderWindows).exe**" as malware. In such cases, please restore from the chest and run. You can check the source code if you desire.
 
 ## Windows CE
-AppMain.exe is for ARMv4I devices. If your device is other than that, select one from "Other CPU". Then, run it in a way that your device requires.
+"**AppMain.exe**" is for ARMv4I devices. If your device is other than that, select one from "**Other CPU**". Then, run it in a way that your device requires.
 
 # How to use
-First, this software launches with the Prime Factorization mode.
+First, this software launches with the "Prime Factorization" mode.
 
-You can switch to the List/Count Prime Numbers feature in the options menu.
+You can switch to the "List/Count Prime Numbers" mode in the options menu.
 
-This software launches with your OS's UI language. Since some Windows CE doesn't support the function, Windows CE version software always launches with English. You can switch the language at Options -> Language.
+This software launches with your OS's UI language. Since some Windows CE doesn't support the function, Windows CE version software always launches with English. You can switch the language at "Options -> Language".
 
-Since the output may get long, the List/Count Prime Numbers feature supports outputting to a text file. As the default setting, this software postscripts if a selected file already exists. You can change this behavior at Options -> Overwrite an existing file.
+Since the output may get long, the "List/Count Prime Numbers" feature supports outputting to a text file. As the default setting, this software postscripts if a selected file already exists. You can change this behavior at "Options -> Overwrite an existing file."
 
 Also, you can save the contents of the output box as a text file. Note that this feature **always overwrites an existing file**.
 
-You can see other contents at Help -> How to use. This menu displays the proper one for the selected mode.
+You can see other contents at "Help -> How to use". This menu displays the proper one for the selected mode.
 
 # How to install / uninstall
 You don't need to install this software. Please run the executable file directly. You can also uninstall by just deleting the file. This software doesn't use registry or such.
 
 # About source codes
-Source codes are in **src**. Please refer to the readmes in each project folder.
+Source codes are in "**src**." Please refer to the readmes in each project folder.
 
 # Notes
 **THE AUTHOR OF THIS SOFTWARE WILL NOT TAKE ANY RESPONSIBILITY FOR ANY DAMAGES BY USING THIS SOFTWARE.**
 
 # Rights
-This is free software, but **ALL RIGHTS RESERVED**. However, it's free to redistribute your completely original software based on this program.
+This is free software, but **ALL RIGHTS RESERVED**. However, it's free to redistribute your completely new one based on this program.
 
 But, note that **this software includes an icon retrieved and edited from the [Brain Wiki](https://brain.fandom.com/ja)**.
 
@@ -86,6 +86,13 @@ Short term mitigation: **Enable compatibility mode from the system setting, refe
 I'm going to fix these issues when I get to know the workaround. If you know that, help me by telling me!
 
 # Release notes
+## v2β3 (9/19/2020)
+Fixed the initial checked/unchecked status of the menu.
+
+Changed the behavior of the "List/Count Prime Numbers" feature when the process was aborted by users to show the number of the found prime numbers at that time.
+
+Fixed other minor issues and usability.
+
 ## v2 beta2 (9/15/2020)
 Renamed variables in the source code for readability.
 

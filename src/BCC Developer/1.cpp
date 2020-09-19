@@ -6,7 +6,7 @@
 #define COMPILER_NAME TEXT("Borland C++ 5.5.1 for Win32 w/ BCC Developer")
 
 #define WND_CLASS_NAME TEXT("My_Window")
-#define NUMOFSTRINGTABLE 44 // String Table に含まれる文字列の数
+#define NUMOFSTRINGTABLE 45 // String Table に含まれる文字列の数
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
 
 HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hedi0, hedi1, hedi2, hedi_out, hwnd_temp, hwnd_focused;
@@ -14,7 +14,7 @@ HINSTANCE hInst; // Instance Handle のバックアップ
 HMENU hmenu;
 HACCEL hAccel;
 OPENFILENAME ofn;
-DWORD dThreadID;
+DWORD dThreadID, dwtemp;
 HANDLE hThread, hFile;
 HDC hdc, hMemDC;
 HFONT hMesFont, hFbtn, hFedi, hFnote; // 作成するフォント
@@ -26,7 +26,6 @@ RECT rect;
 HBITMAP hBitmap;
 INT r=0, g=255, b=255, scrx=0, scry=0, editlen=0, btnsize[2];
 UINT menu[5];
-DWORD dwtemp;
 LONGLONG num[3]; // 入力値受付用変数
 bool aborted=false, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
 TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[NUMOFSTRINGTABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
@@ -75,7 +74,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
     wcl.hIcon = LoadIcon(hInstance, TEXT("Res_Icon")); // アイコンを読み込む
     wcl.hIconSm = LoadIcon(hInstance, TEXT("Res_Icon")); // 小アイコンを読み込む
     wcl.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wcl.lpszMenuName = TEXT("Res_JapaneseMenu"); // メニューを読み込む
+    wcl.lpszMenuName = 0;
     wcl.cbClsExtra = 0;
     wcl.cbWndExtra = 0;
     wcl.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -171,7 +170,7 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
     BOOL bRet;
     SetTimer(hwnd, 1, 16, NULL);
 
-    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ) { // Window Message が WM_QUIT(=0) でない限りループ
+    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ){ // Window Message が WM_QUIT(=0) でない限りループ
         if(bRet==-1) break; // エラーなら抜ける
         else if(!TranslateAccelerator(hwnd, hAccel, &msg)){
             TranslateMessage(&msg);
@@ -181,14 +180,14 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
     return (int)msg.wParam;
 }
 
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-    switch(uMsg) {
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
+    switch(uMsg){
         case WM_CREATE: // 最初に出されるメッセージ
             // メニューの初期化
             SetMenu(hWnd, hmenu);
-            if(GetUserDefaultUILanguage() == 0x0411) CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-            else CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
-            CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
+            if(GetUserDefaultUILanguage() == 0x0411) CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
+            else CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
+            CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
             EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
@@ -276,7 +275,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             break;
 
         case WM_COMMAND:
-            switch(LOWORD(wParam)) {
+            switch(LOWORD(wParam)){
                 case 0: // OKボタン
                     if(working) break;
                     working = true;
@@ -339,7 +338,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         MessageBox(hWnd, tcmes[11], tcmes[12], MB_OK | MB_ICONWARNING);
                         break;
                     }
-                    
+
                     GetWindowText(hedi_out, tcEdit, GetWindowTextLength(hedi_out)+1);
                     if(WriteFile(hFile, "\xFF\xFE", 2, &dwtemp, NULL)){ // Byte Order Mark
                         MessageBox(hWnd, tcmes[13], tcmes[14], MB_OK | MB_ICONINFORMATION);
@@ -533,7 +532,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                         TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
                         TEXT("%s") TARGET_CPU TEXT("\n")
                         TEXT("%s") __DATE__ TEXT(" ") __TIME__
-                        TEXT("\n\nCopyright ? 2018-2020 watamario All rights reserved."),
+                        TEXT("\n\nCopyright (C) 2018-2020 watamario All rights reserved."),
                         tcmes[1], tcmes[40], tcmes[41], tcmes[42], tcmes[43]);
                     MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
                     break;
@@ -763,7 +762,7 @@ void ResizeMoveControls(){
     return;
 }
 
-void Paint() {
+void Paint(){
     GetClientRect(hwnd, &rect);
     SelectObject(hMemDC, hPen); // デバイスコンテキストにペンを設定
     SelectObject(hMemDC, hBrush); // デバイスコンテキストにブラシを設定
@@ -918,7 +917,7 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
     if(num[0]!=2 && !(num[0]%2)) num[0]++;
     if(num[1]<1) num[1]=0x7fffffffffffffff;
     if(num[2]<1) num[2]=0x7fffffffffffffff;
-    if(num[1]-num[0]<1) { // 無効な値だった場合
+    if(num[1]-num[0]<1){ // 無効な値だった場合
         wsprintf(tcstr, TEXT("%s - ") TARGET_CPU, tcmes[0]);
         SetWindowText(hwnd, tcstr);
         MessageBox(hwnd, tcmes[29], tcmes[12], MB_OK | MB_ICONWARNING);
@@ -1003,10 +1002,10 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
 
     // 計算
     for(i=num[0]; i<=num[1] && cnt<num[2]; i++){
-        for(j=2; j<=i; j++) {
+        for(j=2; j<=i; j++){
             if(aborted) break;
             if(i%j==0 && i!=j) break;
-            if(i/j<j || i==j) {
+            if(i/j<j || i==j){
                 if(!onlycnt){
                     tcresult[0] = L'\0';
                     if(cnt) wsprintf(tcresult, TEXT(", %I64d"), i);
@@ -1024,11 +1023,14 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
     }
 
     // 計算中断が押された場合の処理
-    if(aborted) {
+    if(aborted){
         if(!onlycnt && !usefile) OutputToEditbox(hedi_out, TEXT("\r\n"));
         else if(!onlycnt && usefile){
             WriteFile(hfile, TEXT("\r\n"), lstrlen(TEXT("\r\n"))*sizeof(TCHAR), &dwtemp, NULL);
             CloseHandle(hfile);
+        } else if(onlycnt){
+            wsprintf(tcstr, tcmes[44], cnt, num[0], num[1], num[2]);
+            OutputToEditbox(hedi_out, tcstr);
         }
         FinalizeErrorLPN();
         return 0;

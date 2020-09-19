@@ -5,7 +5,7 @@
 //
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION     2, 0, 0, 1
+FILEVERSION     2, 0, 0, 2
 FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
 FILEFLAGS       0
 FILEOS          VOS_NT_WINDOWS32
@@ -17,11 +17,11 @@ FILETYPE        VFT_APP
         {
             VALUE "Comments",         "This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\0"
             VALUE "FileDescription",  "Prime Factorization Software\0"
-            VALUE "FileVersion",      "2 beta2\0"
+            VALUE "FileVersion",      "2 beta3\0"
             VALUE "InternalName",     "Prime Factorization\0"
             VALUE "LegalCopyright",   "Copyright (C) 2018-2020 watamario All rights reserved.\0"
             VALUE "ProductName",      "Prime Factorization for SHARP Brain\0"
-            VALUE "ProductVersion",   "2 beta2\0"
+            VALUE "ProductVersion",   "2 beta3\0"
         }
     }
     BLOCK "VarFileInfo"
@@ -129,7 +129,7 @@ STRINGTABLE
     // Japanese
     1000 "‘fˆö”•ª‰ğƒvƒƒOƒ‰ƒ€"
 
-    1001 "‘fˆö”•ª‰ğ for SHARP Brain Ver. 2ƒÀ2\n\n\
+    1001 "‘fˆö”•ª‰ğ for SHARP Brain Ver. 2ƒÀ3\n\n\
 ‘f”ŠÖ˜A‚ÌŒvZ‚ğs‚¤ƒVƒ“ƒvƒ‹‚ÈƒtƒŠ[ƒ\\ƒtƒgƒEƒFƒA‚Å‚·B\n\
 1`9223372036854775807‚Ì©‘R”‚É‘Î‰‚µ‚Ä‚¢‚Ü‚·B\n\n\
 »ìÒ‚ÍA‚±‚Ìƒ\\ƒtƒgƒEƒFƒA‚Ìg—p‚É‚æ‚Á‚Ä”­¶‚µ‚½ŒvZŒ‹‰Ê‚ÌŒë‚èAƒoƒO“™‚É‚æ‚éŒë“®ì‚ğŠÜ‚Ş\
@@ -233,6 +233,8 @@ ANSI(Shift-JIS)‚Åo—Í‚³‚ê‚Ü‚·B‚È‚¨A1000‚ğ’´‚¦‚é”‚ğŒÂ”ãŒÀ‚Æ‚µ‚Äw’è‚µ‚½ê‡‚
     1044 "íœ"
 
     1045 "‘SÁ"
+    
+    1046 "[’†’f] ‡ŒvŒÂ”: %I64dˆÈã (”ÍˆÍ: %I64dˆÈã%I64dˆÈ‰º, ŒÂ”ãŒÀ: %I64d)\r\n"
 
 
     // English
@@ -336,4 +338,6 @@ Blank or 0 will be taken as unlimited."
     1144 "DEL"
 
     1145 "CE"
+    
+    1146 "[Aborted] Number of found prime numbers: More than %I64d (Range: Between %I64d and %I64d, Limitation: %I64d)"
 }

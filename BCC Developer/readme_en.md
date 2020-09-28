@@ -6,6 +6,8 @@ This source code is for **Windows PC**.
 # Requirements
 This project has been created by **BCC Developer**, and I use **Borland C++ Compiler 5.5** as a compiler.
 
+You have to edit the Include Path in "**Project Settings->Resources**" to fit your environment.
+
 This compiler is quite old and supports Windows XP and older, and can't compile 64-bit applications.
 
 # Notes

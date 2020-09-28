@@ -27,7 +27,7 @@ I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMV4I)**.
 I compiled for CPUs that the IDE supports. However, since I don't have other devices, I can't test them.
 
 # How to run
-I put executable files in "**bin_(Target Device)**".
+You can get executable files at the "**Releases**" page.
 ## Windows PC
 Please use one which matches your computer.
 
@@ -61,7 +61,7 @@ You can see other contents at "Help -> How to use". This menu displays the prope
 You don't need to install this software. Please run the executable file directly. You can also uninstall by just deleting the file. This software doesn't use registry or such.
 
 # About source codes
-Source codes are in "**src**." Please refer to the readmes in each project folder.
+Please refer to the readmes in each project folder.
 
 # Notes
 **THE AUTHOR OF THIS SOFTWARE WILL NOT TAKE ANY RESPONSIBILITY FOR ANY DAMAGES BY USING THIS SOFTWARE.**
@@ -86,6 +86,9 @@ Short term mitigation: **Enable compatibility mode from the system setting, refe
 I'm going to fix these issues when I get to know the workaround. If you know that, help me by telling me!
 
 # Release notes
+## v2 (9/28/2020)
+General Release
+
 ## v2β3 (9/19/2020)
 Fixed the initial checked/unchecked status of the menu.
 

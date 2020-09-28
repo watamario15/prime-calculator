@@ -1,0 +1,2 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\v150\Platforms\Win32\PlatformToolsets\v141_xp\Toolset.targets(39,5): warning MSB8051: Windows XP をターゲットとするサポートは非推奨であり、Visual Studio の将来のリリースで提供されなくなります。詳細については、https://go.microsoft.com/fwlink/?linkid=2023588 をご覧ください。
+  PrimeFactorization.vcxproj -> C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\Win32\Debug\PF_IA-32.exe

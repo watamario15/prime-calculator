@@ -86,7 +86,7 @@ Short term mitigation: **Enable compatibility mode from the system setting, refe
 I'm going to fix these issues when I get to know the workaround. If you know that, help me by telling me!
 
 # Release notes
-# v2 (9/28/2020)
+## v2 (9/28/2020)
 General Release
 
 ## v2β3 (9/19/2020)

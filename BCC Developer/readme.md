@@ -6,6 +6,8 @@ This document is also available in [English](readme_en.md).
 # ビルド時の要件
 このプロジェクトは、**BCC Developer**で作成されています。また、製作者はコンパイラとして**Borland C++ Compiler 5.5**を使用しています。
 
+また、**プロジェクト設定->リソース** のインクルードパスを環境に合わせて書き換える必要があります。
+
 なお、このコンパイラは超古いのでWindows XPにも普通に対応している他、64bitプログラムのビルドは行えません。
 
 # 注釈

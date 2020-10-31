@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <tchar.h>
+#include "defproc.h"
 
 #ifdef _WIN64
 #define TARGET_PLATFORM TEXT("Win64")
@@ -173,12 +174,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     hAccel = LoadAccelerators(hInstance, TEXT("Res_Accel"));
 
     MSG msg;
-    BOOL bRet;
     SetTimer(hwnd, 1, 16, NULL);
 
-    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ){ // Window Message が WM_QUIT(=0) でない限りループ
-        if(bRet==-1) break; // エラーなら抜ける
-        else if(!TranslateAccelerator(hwnd, hAccel, &msg)){
+    while(GetMessage(&msg, NULL, 0, 0)){ // Window Message が WM_QUIT(=0) でない限りループ
+        if(!TranslateAccelerator(hwnd, hAccel, &msg)){
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -205,7 +204,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             hedi0 = CreateWindowEx( // 入力ボックス
                 0,
                 TEXT("EDIT"),
-                NULL,
+                TEXT(""),
                 WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL,
                 0,
                 0,
@@ -222,7 +221,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             hedi_out = CreateWindowEx( // 結果出力ボックス
                 0,
                 TEXT("EDIT"),
-                NULL,
+                TEXT(""),
                 WS_CHILD | WS_VISIBLE | ES_READONLY | ES_LEFT | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
                 0,
                 0,
@@ -399,7 +398,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     hedi1 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
-                        NULL,
+                        TEXT(""),
                         WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL,
                         0,
                         0,
@@ -415,7 +414,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     hedi2 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
-                        NULL,
+                        TEXT(""),
                         WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL,
                         0,
                         0,
@@ -538,7 +537,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
                         TEXT("%s") TARGET_CPU TEXT("\n")
                         TEXT("%s") __DATE__ TEXT(" ") __TIME__
-                        TEXT("\n\nCopyright © 2018-2020 watamario All rights reserved."),
+                        TEXT("\n\nCopyright © 2018-2020 watamario15 All rights reserved."),
                         tcmes[1], tcmes[40], tcmes[41], tcmes[42], tcmes[43]);
                     MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
                     break;
@@ -555,7 +554,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
 
         default:
-            return DefWindowProc(hWnd, uMsg, wParam, lParam);
+            return myDefWindowProc(hWnd, uMsg, wParam, lParam);
     }
     return 0;
 }

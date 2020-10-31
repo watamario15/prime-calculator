@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2 Visual Studio 2019版ソースコード
+# 素因数分解プログラム Ver. 2.1 Visual Studio 2019版ソースコード
 This document is also available in [English](readme_en.md).
 
 **Windows PC**用のソースコードです。

@@ -1,4 +1,4 @@
-# Prime Factorization Software Ver. 2 Source Code for GNU Compiler Collection
+# Prime Factorization Software Ver. 2.1 Source Code for GNU Compiler Collection
 この文書には[日本語版](readme.md)もあります。
 
 This source code is for **Windows PC**.

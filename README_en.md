@@ -22,7 +22,7 @@ By the way, you can use this program as a **template to create your own GUI appl
 The "OlderWindows" version might work on older Windows versions.
 
 ## Windows CE
-I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMV4I)**.
+I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMv5TEJ**.
 
 I compiled for CPUs that the IDE supports. However, since I don't have other devices, I can't test them.
 
@@ -67,25 +67,18 @@ Please refer to the readmes in each project folder.
 **THE AUTHOR OF THIS SOFTWARE WILL NOT TAKE ANY RESPONSIBILITY FOR ANY DAMAGES BY USING THIS SOFTWARE.**
 
 # Rights
-This is free software, but **ALL RIGHTS RESERVED**. However, it's free to redistribute your completely new one based on this program.
+This software is licensed under the **MIT License**. Do not forget to read this super short license before you use/redistribute it.
 
-But, note that **this software includes an icon retrieved and edited from the [Brain Wiki](https://brain.fandom.com/ja)**.
+However, note that **this software includes an icon retrieved and edited from the [Brain Wiki](https://brain.fandom.com/ja)**.
 
-Author: watamario, otwthutu15(AtSign)gmail.com
-
-# Known issues
-    While you are entering with IME, the software stops working.
-Short term mitigation: **Enter with Alphabet/Number input mode.**
-
-    When you try to paste content from clipboard history in Windows 10, you will no longer be able to operate the software.
-Short term mitigation: **Use Ctrl+V. You can use edit controls in other software to the contents in the Clipboard History to be pastable.**
-
-    You can't enter with the new IME included in Windows 10 May 2020 Update.
-Short term mitigation: **Enable compatibility mode from the system setting, referring to [this MS page](https://support.microsoft.com/en-us/help/4564002/you-might-have-issues-on-windows-10-version-2004-when-using-some-micro).** (It seems this new IME has numerous problems as of September 2020.)
-
-I'm going to fix these issues when I get to know the workaround. If you know that, help me by telling me!
+Author: watamario15, otwthutu15(AtSign)gmail.com
 
 # Release notes
+## v2.1 (10/31/2020)
+Fixed issues around inputting to edit controls.
+
+Fixed other minor issues.
+
 ## v2 (9/28/2020)
 General Release
 

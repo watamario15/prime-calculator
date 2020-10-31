@@ -1,4 +1,4 @@
-# Prime Factorization Software Ver. 2 Source Code for PocketGCC 1.50
+# Prime Factorization Software Ver. 2.1 Source Code for PocketGCC 1.50
 この文書には[日本語版](readme.md)もあります。
 
 This source code is for **Windows CE (ARMv4I)**.
@@ -13,4 +13,4 @@ This compiler **doesn't support source files includes other than English charact
 # Notes
 The source code is "**win.cpp**", the resource script is "**resource.rc**", the icon is "**app.ico**", and the batch file is "**WINBUILD.BAT**".
 
-The executable binary file will be generated as "**AppMain.exe**."
+The executable binary file will be generated as "**AppMain.exe**".

@@ -1,11 +1,10 @@
 ﻿  1.cpp
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(78,91): warning C4100: 'lpCmdLine': 引数は関数の本体部で 1 度も参照されません。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(78,65): warning C4100: 'hPrevInstance': 引数は関数の本体部で 1 度も参照されません。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(836,40): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(926,24): warning C4459: 'ofn' を宣言すると、グローバル宣言が隠蔽されます
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(29,14): message : 'ofn' の宣言を確認してください
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(921,38): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(254): warning C4706: 条件式の比較値は、代入の結果になっています。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(186): warning C4706: 条件式の比較値は、代入の結果になっています。
-C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(987): warning C4706: 条件式の比較値は、代入の結果になっています。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(79,91): warning C4100: 'lpCmdLine': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(79,65): warning C4100: 'hPrevInstance': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(835,40): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(925,24): warning C4459: 'ofn' を宣言すると、グローバル宣言が隠蔽されます
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(30,14): message : 'ofn' の宣言を確認してください
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(920,38): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(253): warning C4706: 条件式の比較値は、代入の結果になっています。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(986): warning C4706: 条件式の比較値は、代入の結果になっています。
   PrimeFactorization.vcxproj -> C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\ARM64\Debug\PF_AArch64.exe

@@ -1,4 +1,4 @@
-# 素因数分解プログラム Ver. 2 eMbedded Visual C++ 4.0版ソースコード
+# 素因数分解プログラム Ver. 2.1 eMbedded Visual C++ 4.0版ソースコード
 This document is also available in [English](readme_en.md).
 
 **Windows CE**用のソースコードです。

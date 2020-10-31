@@ -1,2 +1,11 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Microsoft\VC\v150\Platforms\Win32\PlatformToolsets\v141_xp\Toolset.targets(39,5): warning MSB8051: Windows XP をターゲットとするサポートは非推奨であり、Visual Studio の将来のリリースで提供されなくなります。詳細については、https://go.microsoft.com/fwlink/?linkid=2023588 をご覧ください。
+  1.cpp
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(79): warning C4100: 'lpCmdLine': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(79): warning C4100: 'hPrevInstance': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(835): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(925): warning C4459: 'ofn' を宣言すると、グローバル宣言が隠蔽されます
+  C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(30): note: 'ofn' の宣言を確認してください
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(920): warning C4100: 'lpParameter': 引数は関数の本体部で 1 度も参照されません。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(253): warning C4706: 条件式の比較値は、代入の結果になっています。
+C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\1.cpp(986): warning C4706: 条件式の比較値は、代入の結果になっています。
   PrimeFactorization.vcxproj -> C:\Users\watamario\Documents\wata\Programming\C_C++\WinAPI_PrimeFactorization_Sample\Visual Studio 2019\Win32\Debug\PF_IA-32.exe

@@ -1,13 +1,14 @@
 [Project]
 Version=1.2.21
-Count=1
+Count=2
 Filename1=1.cpp,1,PrimeFactorization.bdp,1,1.cpp
+Filename2=defproc.h,1,PrimeFactorization.bdp,1,defproc.h
 
 [Compile]
 ResourceName=resource.rc
 RunParam=
 Count=2
-Current=2
+Current=1
 
 [Compile1]
 DefName=Debug
@@ -60,8 +61,9 @@ MakeBefore=
 MakeAfter=
 
 [OpenFiles]
-FileCount=2
+FileCount=3
 FileName1=1.cpp
 FileName2=resource.rc
+FileName3=defproc.h
 ActivePageIndex=0
 

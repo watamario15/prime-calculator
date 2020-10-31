@@ -360,12 +360,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
     hAccel = LoadAccelerators(hInstance, TEXT("Res_Accel"));
 
     MSG msg;
-    BOOL bRet;
     SetTimer(hwnd, 1, TIMER_AWAIT, NULL);
 
-    while( (bRet=GetMessage(&msg, hwnd, 0, 0)) ){ // Window Message が WM_QUIT(=0) でない限りループ
-        if(bRet==-1) break; // エラーなら抜ける
-        else if(!TranslateAccelerator(hwnd, hAccel, &msg)){
+    while(GetMessage(&msg, NULL, 0, 0)){ // Window Message が WM_QUIT(=0) でない限りループ
+        if(!TranslateAccelerator(hwnd, hAccel, &msg)){
             TranslateMessage(&msg);
             DispatchMessage(&msg); 
         }
@@ -395,7 +393,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             hedi0 = CreateWindowEx( // 入力ボックス
                 0,
                 TEXT("EDIT"),
-                NULL,
+                TEXT(""),
                 WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_AUTOHSCROLL | ES_NUMBER,
                 0,
                 0,
@@ -412,7 +410,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             hedi_out = CreateWindowEx( // 結果出力ボックス
                 0,
                 TEXT("EDIT"),
-                NULL,
+                TEXT(""),
                 WS_CHILD | WS_VISIBLE | ES_READONLY | ES_LEFT | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
                 0,
                 0,
@@ -612,7 +610,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     hedi1 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
-                        NULL,
+                        TEXT(""),
                         WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL,
                         0,
                         0,
@@ -628,7 +626,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     hedi2 = CreateWindowEx( // 入力ボックス
                         0,
                         TEXT("EDIT"),
-                        NULL,
+                        TEXT(""),
                         WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL,
                         0,
                         0,
@@ -823,7 +821,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
                         TEXT("%s") TARGET_CPU TEXT("\n")
                         TEXT("%s") TEXT(__DATE__) TEXT(" ") TEXT(__TIME__)
-                        TEXT("\n(C) 2018-2020 watamario"),
+                        TEXT("\n(C) 2018-2020 watamario15"),
                         tcmes[1], tcmes[40], tcmes[41], tcmes[42], tcmes[43]);
                     MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
                     StoppingTimer--;
@@ -1142,7 +1140,7 @@ void ResizeMoveControls(){
     }
 
     // コントロールの移動とサイズ変更
-    MoveWindow(hCmdBar, NULL, NULL, NULL, NULL, TRUE);
+    MoveWindow(hCmdBar, 0, 0, 0, 0, TRUE);
     btnsize[0] = 64*scrx/700; btnsize[1] = 32*scry/400;
     btnsize[2] = scrx*9/120; btnsize[3] = 8*scry/100;
     if(!mode){

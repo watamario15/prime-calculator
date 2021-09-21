@@ -1,5 +1,4 @@
-﻿typedef struct IUnknown IUnknown;
-#include <windows.h>
+﻿#include <windows.h>
 #include <tchar.h>
 #include "defproc.h"
 
@@ -18,11 +17,37 @@
         #define TARGET_CPU TEXT("AArch32(ARM32)")
     #endif
 #endif
-#define COMPILER_NAME TEXT("Microsoft Visual Studio Enterprise 2019")
-
+#define COMPILER_NAME TEXT("Visual Studio 2019")
 #define WND_CLASS_NAME TEXT("Prime_Factorization_Main")
-#define NUMOFSTRINGTABLE 45 // String Table に含まれる文字列の数
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
+
+enum {
+    IDC_BUTTON_OK = 0,
+    IDC_BUTTON_ABORT = 1,
+    IDC_BUTTON_CLEAR = 2,
+    IDC_EDIT_IN1 = 20,
+    IDC_EDIT_IN2 = 21,
+    IDC_EDIT_IN3 = 22,
+    IDC_EDIT_OUT = 23,
+    IDM_FILE_SAVE_AS = 100,
+    IDM_FILE_EXIT = 101,
+    IDM_EDIT_CUT = 120,
+    IDM_EDIT_COPY = 121,
+    IDM_EDIT_PASTE = 122,
+    IDM_EDIT_SELECT_ALL = 123,
+    IDM_OPT_PF = 140,
+    IDM_OPT_LCPN = 141,
+    IDM_OPT_ONLYNUM = 142,
+    IDM_OPT_OUTFILE = 143,
+    IDM_OPT_OVERWRITE = 144,
+    IDM_OPT_LANG_JA = 145,
+    IDM_OPT_LANG_EN = 146,
+    IDM_HELP_HOWTOUSE = 160,
+    IDM_HELP_ABOUT = 161,
+    IDS_JA = 1000,
+    IDS_EN = 1100,
+    SIZE_OF_STRING_TABLE = 45
+};
 
 HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hedi0, hedi1, hedi2, hedi_out, hwnd_temp, hwnd_focused;
 HINSTANCE hInst; // Instance Handle のバックアップ
@@ -43,7 +68,7 @@ INT r=0, g=255, b=255, scrx=0, scry=0, editlen=0, btnsize[2];
 UINT menu[5];
 LONGLONG num[3]; // 入力値受付用変数
 bool aborted=false, working=false, onlycnt=false, usefile=false, mode=false, overwrite=false;
-TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[NUMOFSTRINGTABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
+TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[SIZE_OF_STRING_TABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
 CHAR cEdit[65540];
 WNDPROC wpedi0_old, wpedi1_old, wpedi2_old; // 元の Window Procedure のアドレス格納用変数
 
@@ -107,10 +132,10 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
     if(scrx<800 || scry<480) {scrx=800; scry=480;}
 
     if(GetUserDefaultUILanguage() == 0x0411){ // UIが日本語環境なら日本語リソースを読み込む
-        for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInstance, i+1000, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
+        for(int i=0; i<SIZE_OF_STRING_TABLE; i++) LoadString(hInstance, i+IDS_JA, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
         hmenu = LoadMenu(hInst, TEXT("Res_JapaneseMenu"));
     } else{ // それ以外なら英語リソースを読み込む
-        for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInstance, i+1100, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
+        for(int i=0; i<SIZE_OF_STRING_TABLE; i++) LoadString(hInstance, i+IDS_EN, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
         hmenu = LoadMenu(hInst, TEXT("Res_EnglishMenu"));
     }
 
@@ -143,7 +168,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         0,
         0,
         hwnd,
-        (HMENU)0,
+        (HMENU)IDC_BUTTON_OK,
         hInstance,
         NULL);
 
@@ -157,7 +182,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         0,
         0,
         hwnd,
-        (HMENU)1,
+        (HMENU)IDC_BUTTON_ABORT,
         hInstance,
         NULL);
 
@@ -171,7 +196,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
         0,
         0,
         hwnd,
-        (HMENU)2,
+        (HMENU)IDC_BUTTON_CLEAR,
         hInstance,
         NULL);
 
@@ -198,12 +223,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         case WM_CREATE: // 最初に出されるメッセージ
             // メニューの初期化
             SetMenu(hWnd, hmenu);
-            if(GetUserDefaultUILanguage() == 0x0411) CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
-            else CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
-            CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-            EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
-            EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+            if(GetUserDefaultUILanguage() == 0x0411)
+                CheckMenuRadioItem(hmenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_JA, MF_BYCOMMAND);
+            else CheckMenuRadioItem(hmenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_EN, MF_BYCOMMAND);
+            CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_PF, MF_BYCOMMAND);
+            EnableMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
+            EnableMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_GRAYED);
 
             hMemDC = CreateCompatibleDC(NULL);
             hBshSys = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
@@ -219,7 +245,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 0,
                 0,
                 hWnd,
-                (HMENU)50,
+                (HMENU)IDC_EDIT_IN1,
                 ((LPCREATESTRUCT)(lParam))->hInstance,
                 NULL);
             SendMessage(hedi0, EM_SETLIMITTEXT, (WPARAM)19, 0); // 符号付き64ビットの限界桁数に設定
@@ -236,7 +262,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                 0,
                 0,
                 hWnd,
-                (HMENU)60,
+                (HMENU)IDC_EDIT_OUT,
                 ((LPCREATESTRUCT)(lParam))->hInstance,
                 NULL);
             SendMessage(hedi_out, EM_SETLIMITTEXT, (WPARAM)65536, 0); // 文字数制限を最大値に変更
@@ -289,7 +315,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
 
         case WM_COMMAND:
             switch(LOWORD(wParam)){
-                case 0: // OKボタン
+                case IDC_BUTTON_OK: // OKボタン
                     if(working) break;
                     working = true;
                     EnableWindow(hbtn_ok, FALSE);
@@ -300,13 +326,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                     DrawMenuBar(hWnd); // メニュー再描画
 
-                    SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
-                    num[0] = _ttoi64(tctemp);
+                    SendMessage(hedi0, WM_GETTEXT, 20, (LPARAM)tctemp);
+                    _stscanf_s(tctemp, TEXT("%I64d"), &num[0]);
                     if(mode){
-                        SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
-                        num[1] = _ttoi64(tctemp);
-                        SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
-                        num[2] = _ttoi64(tctemp);
+                        SendMessage(hedi1, WM_GETTEXT, 20, (LPARAM)tctemp);
+                        _stscanf_s(tctemp, TEXT("%I64d"), &num[1]);
+                        SendMessage(hedi2, WM_GETTEXT, 20, (LPARAM)tctemp);
+                        _stscanf_s(tctemp, TEXT("%I64d"), &num[2]);
                     }
                     SetWindowText(hWnd, tcmes[9]);
 
@@ -315,17 +341,17 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
                     break;
 
-                case 1: // 中断ボタン
+                case IDC_BUTTON_ABORT: // 中断ボタン
                     aborted = true;
                     break;
 
-                case 2: // 履歴消去
+                case IDC_BUTTON_CLEAR: // 履歴消去
                     editlen = (INT)SendMessage(hedi_out, WM_GETTEXTLENGTH, 0, 0);
                     SendMessage(hedi_out, EM_SETSEL, 0, editlen);
                     SendMessage(hedi_out, EM_REPLACESEL, 0, (WPARAM)TEXT(""));
                     break;
 
-                case 2001: // テキストファイルに保存
+                case IDM_FILE_SAVE_AS: // テキストファイルに保存
                     tcFile[0] = L'\0'; tcEdit[0] = L'\0';
                     ZeroMemory(&ofn, sizeof(OPENFILENAME));
                     ofn.lStructSize = sizeof(OPENFILENAME);
@@ -362,33 +388,33 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     CloseHandle(hFile);
                     break;
 
-                case 2009: // 終了
+                case IDM_FILE_EXIT: // 終了
                     SendMessage(hWnd, WM_CLOSE, 0, 0);
                     break;
 
-                case 2021: // 切り取り
+                case IDM_EDIT_CUT: // 切り取り
                     SendMessage(hwnd_focused, WM_CUT, 0, 0);
                     break;
 
-                case 2022: // コピー
+                case IDM_EDIT_COPY: // コピー
                     SendMessage(hwnd_focused, WM_COPY, 0, 0);
                     break;
 
-                case 2023: // 貼り付け
+                case IDM_EDIT_PASTE: // 貼り付け
                     SendMessage(hwnd_focused, WM_PASTE, 0, 0);
                     break;
 
-                case 2024: // 全選択
+                case IDM_EDIT_SELECT_ALL: // 全選択
                     editlen = (INT)SendMessage(hwnd_focused, WM_GETTEXTLENGTH, 0, 0);
                     SendMessage(hwnd_focused, EM_SETSEL, 0, editlen);
                     break;
 
-                case 2051: // 素因数分解に変更
+                case IDM_OPT_PF: // 素因数分解に変更
                     if(!mode) break;
-                    CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-                    EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
-                    EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
-                    EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+                    CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_PF, MF_BYCOMMAND);
+                    EnableMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_GRAYED);
+                    EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
+                    EnableMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_GRAYED);
                     SetFocus(hedi0);
                     DestroyWindow(hedi1); // mode1で追加されたエディットボックスを削除
                     DestroyWindow(hedi2); // mode1で追加されたエディットボックスを削除
@@ -396,12 +422,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SendMessage(hWnd, WM_SIZE, 0, 0);
                     break;
 
-                case 2052: // 素数列挙・数えに変更
+                case IDM_OPT_LCPN: // 素数列挙・数えに変更
                     if(mode) break;
-                    CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
-                    EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_ENABLED);
-                    EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_ENABLED);
-                    EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_ENABLED);
+                    CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_LCPN, MF_BYCOMMAND);
+                    EnableMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_ENABLED);
+                    EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
+                    EnableMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_ENABLED);
                     mode = 1;
                     hedi1 = CreateWindowEx( // 入力ボックス
                         0,
@@ -413,7 +439,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         0,
                         0,
                         hWnd,
-                        (HMENU)51,
+                        (HMENU)IDC_EDIT_IN2,
                         hInst,
                         NULL);
                     SendMessage(hedi1, EM_SETLIMITTEXT, (WPARAM)19, 0);
@@ -429,7 +455,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                         0,
                         0,
                         hWnd,
-                        (HMENU)52,
+                        (HMENU)IDC_EDIT_IN3,
                         hInst,
                         NULL);
                     SendMessage(hedi2, EM_SETLIMITTEXT, (WPARAM)19, 0);
@@ -437,65 +463,65 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     wpedi2_old = (WNDPROC)SetWindowLongPtr(hedi2, GWLP_WNDPROC, (LONG_PTR)Edit2WindowProc); // Window Procedure のすり替え
                     break;
 
-                case 2060: // 「個数のみ表示」
-                    if(GetMenuState(hmenu, 2060, MF_BYCOMMAND) & MF_CHECKED){ // 既にチェックがついていた場合
-                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_UNCHECKED);
-                        EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_ENABLED);
+                case IDM_OPT_ONLYNUM: // 「個数のみ表示」
+                    if(GetMenuState(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND) & MF_CHECKED){ // 既にチェックがついていた場合
+                        CheckMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_UNCHECKED);
+                        EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
                         EnableWindow(hedi2, TRUE);
                         onlycnt = false;
                     } else{
-                        CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
-                        EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
+                        CheckMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_CHECKED);
+                        EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
                         EnableWindow(hedi2, FALSE);
                         onlycnt = true;
                     }
                     break;
 
-                case 2061: // 「テキストファイルに出力」
-                    if(GetMenuState(hmenu, 2061, MF_BYCOMMAND) & MF_CHECKED){
-                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_UNCHECKED);
+                case IDM_OPT_OUTFILE: // 「テキストファイルに出力」
+                    if(GetMenuState(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND) & MF_CHECKED){
+                        CheckMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_UNCHECKED);
                         usefile = false;
                     } else{
-                        CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
+                        CheckMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
                         usefile = true;
                     }
                     break;
 
-                case 2062: // 「既存のファイルに上書き」
-                    if(GetMenuState(hmenu, 2062, MF_BYCOMMAND) & MF_CHECKED){
-                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_UNCHECKED);
+                case IDM_OPT_OVERWRITE: // 「既存のファイルに上書き」
+                    if(GetMenuState(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND) & MF_CHECKED){
+                        CheckMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_UNCHECKED);
                         overwrite = false;
                     } else{
-                        CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
+                        CheckMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_CHECKED);
                         overwrite = true;
                     }
                     break;
 
-                case 2070: // 日本語に変更
+                case IDM_OPT_LANG_JA: // 日本語に変更
                     // 状態のバックアップ
-                    menu[0] = GetMenuState(hmenu, 2051, MF_BYCOMMAND);
-                    menu[1] = GetMenuState(hmenu, 2052, MF_BYCOMMAND);
-                    menu[2] = GetMenuState(hmenu, 2060, MF_BYCOMMAND);
-                    menu[3] = GetMenuState(hmenu, 2061, MF_BYCOMMAND);
-                    menu[4] = GetMenuState(hmenu, 2062, MF_BYCOMMAND);
+                    menu[0] = GetMenuState(hmenu, IDM_OPT_PF, MF_BYCOMMAND);
+                    menu[1] = GetMenuState(hmenu, IDM_OPT_LCPN, MF_BYCOMMAND);
+                    menu[2] = GetMenuState(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND);
+                    menu[3] = GetMenuState(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND);
+                    menu[4] = GetMenuState(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND);
                     DestroyMenu(hmenu);
                     hmenu = LoadMenu(hInst, TEXT("Res_JapaneseMenu"));
                     SetMenu(hWnd, hmenu);
-                    CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
+                    CheckMenuRadioItem(hmenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_JA, MF_BYCOMMAND);
 
                     // チェック・ラジオボタンの復元
-                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-                    else CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
-                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
-                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
-                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_PF, MF_BYCOMMAND);
+                    else CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_LCPN, MF_BYCOMMAND);
+                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_CHECKED);
 
                     // 有効無効の復元
-                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
-                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
-                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_GRAYED);
 
-                    for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInst, i+1000, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
+                    for(int i=0; i<SIZE_OF_STRING_TABLE; i++) LoadString(hInst, IDS_JA+i, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
                     SetWindowText(hbtn_ok, tcmes[4]);
                     SetWindowText(hbtn_abort, tcmes[5]);
                     SetWindowText(hbtn_clr, tcmes[6]);
@@ -503,31 +529,31 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SetWindowText(hwnd, tctemp);
                     break;
 
-                case 2071: // 英語に変更
+                case IDM_OPT_LANG_EN: // 英語に変更
                     // 状態のバックアップ
-                    menu[0] = GetMenuState(hmenu, 2051, MF_BYCOMMAND);
-                    menu[1] = GetMenuState(hmenu, 2052, MF_BYCOMMAND);
-                    menu[2] = GetMenuState(hmenu, 2060, MF_BYCOMMAND);
-                    menu[3] = GetMenuState(hmenu, 2061, MF_BYCOMMAND);
-                    menu[4] = GetMenuState(hmenu, 2062, MF_BYCOMMAND);
+                    menu[0] = GetMenuState(hmenu, IDM_OPT_PF, MF_BYCOMMAND);
+                    menu[1] = GetMenuState(hmenu, IDM_OPT_LCPN, MF_BYCOMMAND);
+                    menu[2] = GetMenuState(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND);
+                    menu[3] = GetMenuState(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND);
+                    menu[4] = GetMenuState(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND);
                     DestroyMenu(hmenu);
                     hmenu = LoadMenu(hInst, TEXT("Res_EnglishMenu"));
                     SetMenu(hWnd, hmenu);
-                    CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
+                    CheckMenuRadioItem(hmenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_EN, MF_BYCOMMAND);
 
                     // チェック・ラジオボタンの復元
-                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
-                    else CheckMenuRadioItem(hmenu, 2051, 2052, 2052, MF_BYCOMMAND);
-                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_CHECKED);
-                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
-                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[0] & MF_CHECKED) CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_PF, MF_BYCOMMAND);
+                    else CheckMenuRadioItem(hmenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_LCPN, MF_BYCOMMAND);
+                    if(menu[2] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[3] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
+                    if(menu[4] & MF_CHECKED) CheckMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_CHECKED);
 
                     // 有効無効の復元
-                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
-                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_GRAYED);
-                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, 2062, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[2] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[3] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
+                    if(menu[4] & MF_GRAYED) EnableMenuItem(hmenu, IDM_OPT_OVERWRITE, MF_BYCOMMAND | MF_GRAYED);
 
-                    for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInst, i+1100, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
+                    for(int i=0; i<SIZE_OF_STRING_TABLE; i++) LoadString(hInst, IDS_EN+i, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
                     SetWindowText(hbtn_ok, tcmes[4]);
                     SetWindowText(hbtn_abort, tcmes[5]);
                     SetWindowText(hbtn_clr, tcmes[6]);
@@ -535,11 +561,11 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     SetWindowText(hwnd, tctemp);
                     break;
 
-                case 2101: // 使い方
+                case IDM_HELP_HOWTOUSE: // 使い方
                     MessageBox(hWnd, tcmes[(mode ? 3 : 2)], tcmes[16], MB_OK | MB_ICONINFORMATION);
                     break;
 
-                case 2109: // このプログラムについて
+                case IDM_HELP_ABOUT: // このプログラムについて
                     wsprintf(tctemp, TEXT("%s")
                         TEXT("%s") COMPILER_NAME TEXT("\n")
                         TEXT("%s") TARGET_PLATFORM TEXT(" Application\n")
@@ -550,7 +576,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     MessageBox(hWnd, tctemp, tcmes[17], MB_OK | MB_ICONINFORMATION);
                     break;
             }
-            if(LOWORD(wParam)<50) SetFocus(hwnd_focused); // エディット以外のコントロールが押されたとき、エディットにフォーカスを戻す
+            if(LOWORD(wParam)<IDC_EDIT_IN1) SetFocus(hwnd_focused); // エディット以外のコントロールが押されたとき、エディットにフォーカスを戻す
             break;
 
         case APP_SETFOCUS:
@@ -588,13 +614,13 @@ LRESULT CALLBACK Edit0WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                         DrawMenuBar(hwnd); // メニュー再描画
 
-                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
-                        num[0] = _ttoi64(tctemp);
+                        SendMessage(hedi0, WM_GETTEXT, 20, (LPARAM)tctemp);
+                        _stscanf_s(tctemp, TEXT("%I64d"), &num[0]);
                         if(mode){
-                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
-                            num[1] = _ttoi64(tctemp);
-                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
-                            num[2] = _ttoi64(tctemp);
+                            SendMessage(hedi1, WM_GETTEXT, 20, (LPARAM)tctemp);
+                            _stscanf_s(tctemp, TEXT("%I64d"), &num[1]);
+                            SendMessage(hedi2, WM_GETTEXT, 20, (LPARAM)tctemp);
+                            _stscanf_s(tctemp, TEXT("%I64d"), &num[2]);
                         }
                         SetWindowText(hwnd, tcmes[9]);
 
@@ -649,13 +675,13 @@ LRESULT CALLBACK Edit2WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
                         EnableMenuItem(hmenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
                         DrawMenuBar(hwnd); // メニュー再描画
 
-                        SendMessage(hedi0, WM_GETTEXT, 31, (LPARAM)tctemp);
-                        num[0] = _ttoi64(tctemp);
+                        SendMessage(hedi0, WM_GETTEXT, 20, (LPARAM)tctemp);
+                        _stscanf_s(tctemp, TEXT("%I64d"), &num[0]);
                         if(mode){
-                            SendMessage(hedi1, WM_GETTEXT, 31, (LPARAM)tctemp);
-                            num[1] = _ttoi64(tctemp);
-                            SendMessage(hedi2, WM_GETTEXT, 31, (LPARAM)tctemp);
-                            num[2] = _ttoi64(tctemp);
+                            SendMessage(hedi1, WM_GETTEXT, 20, (LPARAM)tctemp);
+                            _stscanf_s(tctemp, TEXT("%I64d"), &num[1]);
+                            SendMessage(hedi2, WM_GETTEXT, 20, (LPARAM)tctemp);
+                            _stscanf_s(tctemp, TEXT("%I64d"), &num[2]);
                         }
                         SetWindowText(hwnd, tcmes[9]);
 
@@ -943,7 +969,7 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter){
     if(num[2]>1000 && !usefile && !onlycnt){
         if(IDYES == MessageBox(hwnd, tcmes[31], tcmes[32], MB_YESNO | MB_ICONINFORMATION)){
             usefile = true;
-            CheckMenuItem(hmenu, 2061, MF_BYCOMMAND | MF_CHECKED);
+            CheckMenuItem(hmenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
         } else{
             FinalizeErrorLPN();
             return 0;

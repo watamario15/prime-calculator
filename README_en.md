@@ -25,7 +25,7 @@ The "OlderWindows" version might work on older Windows versions.
 I tested on **SHARP Brain PW-SH1 (Windows Embedded CE 6.0, ARMv5TEJ**. I compiled for all CPUs that the IDE supports, but I don't test them since I don't have such devices.
 
 ## How to run
-You can get executable files at the "**Releases**" page.
+You can get executable files at the "**[Releases](https://github.com/watamario15/Prime-Factorizarion-Win32API/releases)**" page.
 
 ### Windows PC
 Use one matches your computer.

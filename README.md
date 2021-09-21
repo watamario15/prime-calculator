@@ -19,7 +19,7 @@ OlderWindows 版は、それ以前の OS でも動作すると思われます。
 なお、**SHARP Brain においても新しい機種では実行できない場合があります**。対応機種等の情報は [Brain Wiki](https://brain.fandom.com/ja) 等の Web サイトを参考にしてください。また、日本語で使用する場合は、電子辞書の日本語化が必要です。
 
 ## 実行手順
-実行ファイルは **Releases** から取得できます。
+実行ファイルは **[Releases](https://github.com/watamario15/Prime-Factorizarion-Win32API/releases)** から取得できます。
 
 ### Windows PC 版
 ご使用のコンピュータに合ったものをご利用ください。

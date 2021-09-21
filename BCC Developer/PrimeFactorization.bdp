@@ -8,7 +8,7 @@ Filename2=defproc.h,1,PrimeFactorization.bdp,1,defproc.h
 ResourceName=resource.rc
 RunParam=
 Count=2
-Current=1
+Current=2
 
 [Compile1]
 DefName=Debug
@@ -30,7 +30,7 @@ Option=-WU
 IncludePath=
 LibraryFile=
 Define=DEBUG
-ResIncludePath=C:\Users\watamario\Documents\bcc\borland\bcc55\Include
+ResIncludePath=C:\bcc55\Include
 OutputDir=Debug
 MakeBefore=
 MakeAfter=
@@ -55,7 +55,7 @@ Option=-WU
 IncludePath=
 LibraryFile=
 Define=
-ResIncludePath=C:\Users\watamario\Documents\bcc\borland\bcc55\Include
+ResIncludePath=C:\bcc55\Include
 OutputDir=Release
 MakeBefore=
 MakeAfter=
@@ -65,5 +65,5 @@ FileCount=3
 FileName1=1.cpp
 FileName2=resource.rc
 FileName3=defproc.h
-ActivePageIndex=0
+ActivePageIndex=1
 

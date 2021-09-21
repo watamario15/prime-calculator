@@ -20,12 +20,12 @@ if not exist "AppMain.exe" goto errors
 goto success
 
 :withres
-echo *** リソーススクリプトresource.rc を前処理中です...
+echo *** リソーススクリプト resource.rc を前処理中です...
 if exist "resource.rc.p" del "resource.rc.p"
 "%pgcc%\cpp0" "%src%\resource.rc" -o "%SRC%\resource.rc.p" -I "%pgcc%\include" -I "%SRC%" -DRC_INVOKED -include "%pgcc%\fixincl.h"
 if not exist "resource.rc.p" goto errors
 
-echo *** 前処理済みリソースresource.rc.p をアセンブル中です...
+echo *** 前処理済みリソース resource.rc.p をアセンブル中です...
 if exist "resource.rc.o" del "resource.rc.o"
 "%pgcc%\windres" "%SRC%\resource.rc.p" -o "%SRC%\resource.rc.o" --include-dir "%src%"
 if not exist "resource.rc.o" goto errors

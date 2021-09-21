@@ -47,6 +47,8 @@ FILETYPE        VFT_APP
 
 Res_Icon ICON "app.ico"
 
+1 Manifest HighDPI.manifest
+
 
 //
 // Menu

@@ -35,6 +35,9 @@ This document is also available in [English](readme_en.md).
    - まさかの Windows XP 用の公式 SDK 自体が C++ 規格に準拠しておらず、非準拠モードにせざるを得ない。
 1. 「すべての構成」及び ARM と ARM64 を選択した「複数のプラットフォーム」を設定対象にし、プロパティを開き直す
 1. C/C++ 言語標準をそれぞれ C17、C++17 に設定
+1. 「すべての構成」及び ARM を設定対象にする
+1. 「C/C++」->「コマンドライン」の「追加のオプション」に `/D _AArch32` と入れる
+1. 同様の手順で、ARM64 では `/D _AArch64` と入れる
 1. 「すべての構成」及び「すべてのプラットフォーム」を設定対象にする
 1. 「マニフェストツール」->「入出力」にて、「追加のマニフェスト ファイル」を `HighDPI.manifest`、「DPI 認識」を「モニターごとの高い DPI 認識」に設定
    - このプロジェクトで用意している `HighDPI.manifest` は、標準的な PerMonitorV2 設定から Visual Studio による自動生成と重複する `<dpiAware>` タグを除いたものです。また、これにより Win32, x64 で `Unrecognized Element "dpiAwareness"` という警告が出ますが XP 用の古いビルドツールを使っているためで、埋め込みは正常に行われるので問題ありません。

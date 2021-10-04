@@ -1,7 +1,6 @@
 ﻿#include <windows.h>
 #include <windowsx.h>
 #include <tchar.h>
-#include <cstdio>
 #include "defproc.h"
 
 #ifdef _WIN64
@@ -55,11 +54,19 @@ enum {
     IDE_CANCEL = 3,
     IDE_CANNOTOPENFILE = 4,
     IDE_CANNOTWRITEFILE = 5,
-    SIZE_OF_STRING_TABLE = 43,
-    MAX_INPUT_BUFFER = 20,
+    SIZE_OF_STRING_TABLE = 48,
+    MAX_INPUT_LENGTH = 21,
     MAX_OUTPUT_BUFFER = 65536,
     MAX_BUFFER = 1024
 };
+
+struct PFSTATUS {
+    unsigned int mode: 1;
+    unsigned int onlycnt: 1;
+    unsigned int usefile: 1;
+    unsigned int charset: 1;
+    unsigned int isWorking: 1;
+} status = {0};
 
 HWND hBtn_ok, hBtn_abort, hBtn_clr, hEdi0, hEdi1, hEdi2, hEdi_out, hWnd_focused;
 HINSTANCE hInst; // Instance Handle のバックアップ
@@ -70,9 +77,8 @@ HBRUSH hBrush = NULL, hBshSys; // 取得するブラシ
 HPEN hPen = NULL, hPenSys; // 取得するペン
 HANDLE hThread;
 INT btnsize[2];
-LONGLONG num[3]; // 入力値受付用変数
-bool mode=false, onlycnt=false, usefile=false, charset=false, working=false;
-volatile bool aborted=false;
+ULONGLONG num[3]; // 入力値受付用変数
+volatile bool isAborted = false;
 TCHAR tcTemp[MAX_BUFFER], tcMes[SIZE_OF_STRING_TABLE][MAX_BUFFER];
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -99,6 +105,19 @@ void OutputToEditbox(HWND hwnd, LPCTSTR arg) { // エディットボックスの
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
     hInst = hInstance;
 
+    if(GetUserDefaultUILanguage() == 0x0411) { // UI が日本語なら日本語リソースを読み込む
+        for(int i=0; i<SIZE_OF_STRING_TABLE; i++)
+            LoadString(hInstance, i+IDS_JA, tcMes[i], sizeof(tcMes[0])/sizeof(tcMes[0][0]));
+        hMenu = LoadMenu(hInst, TEXT("ResMenu_JA"));
+    } else { // それ以外なら英語リソースを読み込む
+        for(int i=0; i<SIZE_OF_STRING_TABLE; i++)
+            LoadString(hInstance, i+IDS_EN, tcMes[i], sizeof(tcMes[0])/sizeof(tcMes[0][0]));
+        hMenu = LoadMenu(hInst, TEXT("ResMenu_EN"));
+    }
+    HACCEL hAccel = LoadAccelerators(hInstance, TEXT("ResAccel")); // ショートカットキー読み込み
+
+    wsprintf(tcTemp, TEXT("%s - %s"), tcMes[0], TARGET_CPU); // タイトル生成
+
     WNDCLASSEX wcl;
     wcl.cbSize = sizeof(WNDCLASSEX);
     wcl.hInstance = hInstance;
@@ -112,21 +131,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     wcl.cbClsExtra = 0;
     wcl.cbWndExtra = 0;
     wcl.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
-    if(!RegisterClassEx(&wcl)) return FALSE;
-
-    if(GetUserDefaultUILanguage() == 0x0411) { // UI が日本語なら日本語リソースを読み込む
-        for(int i=0; i<SIZE_OF_STRING_TABLE; i++)
-            LoadString(hInstance, i+IDS_JA, tcMes[i], sizeof(tcMes[0])/sizeof(tcMes[0][0]));
-        hMenu = LoadMenu(hInst, TEXT("ResMenu_JA"));
-    } else { // それ以外なら英語リソースを読み込む
-        for(int i=0; i<SIZE_OF_STRING_TABLE; i++)
-            LoadString(hInstance, i+IDS_EN, tcMes[i], sizeof(tcMes[0])/sizeof(tcMes[0][0]));
-        hMenu = LoadMenu(hInst, TEXT("ResMenu_EN"));
+    if(!RegisterClassEx(&wcl)) {
+        MessageBox(NULL, tcMes[43], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
     }
-
-    HACCEL hAccel = LoadAccelerators(hInstance, TEXT("ResAccel")); // ショートカットキー読み込み
-
-    wsprintf(tcTemp, TEXT("%s - %s"), tcMes[0], TARGET_CPU); // タイトル生成
 
     // WM_SIZE でサイズ調整するので、生成時は適当でいい
     HWND hWnd = CreateWindowEx( // メインウィンドウを生成
@@ -140,6 +148,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         hInstance,
         NULL
     );
+    if(!hWnd){
+        MessageBox(NULL, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     hBtn_ok = CreateWindowEx( // OKボタン
         0,
@@ -151,6 +163,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         (HMENU)IDC_BUTTON_OK,
         hInstance,
         NULL);
+    if(!hBtn_ok) {
+        MessageBox(hWnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     hBtn_abort = CreateWindowEx( // 中断ボタン
         0,
@@ -162,6 +178,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         (HMENU)IDC_BUTTON_ABORT,
         hInstance,
         NULL);
+    if(!hBtn_abort) {
+        MessageBox(hWnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     hBtn_clr = CreateWindowEx( // 履歴消去ボタン
         0,
@@ -173,8 +193,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         (HMENU)IDC_BUTTON_CLEAR,
         hInstance,
         NULL);
-
-    if(!hWnd) return FALSE;
+    if(!hBtn_clr) {
+        MessageBox(hWnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     ShowWindow(hWnd, nShowCmd);
     UpdateWindow(hWnd);
@@ -218,7 +240,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             CloseHandle(hThread);
             switch(dwTemp) {
                 case IDE_INVALID:
-                    if(!mode) {
+                    if(!status.mode) {
                         MessageBox(hwnd, tcMes[31], tcMes[19], MB_OK | MB_ICONWARNING);
                         OutputToEditbox(hEdi_out, tcMes[32]);
                     }else{
@@ -228,7 +250,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     break;
 
                 case IDE_ABORT:
-                    aborted = false;
+                    isAborted = false;
                     break;
 
                 case IDE_CANCEL:
@@ -247,9 +269,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
                     wsprintf(tcTemp, TEXT("%s - %s"), tcMes[0], TARGET_CPU);
                     SetWindowText(hwnd, tcTemp);
             }
-            if(mode) {
+            if(status.mode) {
                 EnableWindow(hEdi1, TRUE);
-                if(!onlycnt) EnableWindow(hEdi2, TRUE);
+                if(!status.onlycnt) EnableWindow(hEdi2, TRUE);
             }
             EnableWindow(hBtn_ok, TRUE);
             EnableWindow(hEdi0, TRUE);
@@ -258,7 +280,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             DrawMenuBar(hwnd); // メニュー再描画
             Paint(hwnd);
             SetFocus(hWnd_focused);
-            working = false;
+            status.isWorking = 0;
             break;
 
         case WM_DESTROY:
@@ -284,8 +306,8 @@ LRESULT CALLBACK Edit0WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             // Enterで実行or次のエディットに移動, 実行対象でなければdefaultに流す(間に別のメッセージ入れちゃだめ!!)
             switch((CHAR)wParam) {
                 case VK_RETURN:
-                    if(!working && !mode) StartCalc(hwnd);
-                    else if(mode) SetFocus(hEdi1);
+                    if(!status.isWorking && !status.mode) StartCalc(hwnd);
+                    else if(status.mode) SetFocus(hEdi1);
                     return 0;
             }
         default:
@@ -327,7 +349,7 @@ LRESULT CALLBACK Edit2WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             // Enterで計算開始, 実行対象でなければdefaultに流す(間に別のメッセージ入れちゃだめ!!)
             switch((CHAR)wParam) {
                 case VK_RETURN:
-                    if(!working) StartCalc(hwnd);
+                    if(!status.isWorking) StartCalc(hwnd);
                     return 0;
             }
         default:
@@ -363,7 +385,11 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         (HMENU)IDC_EDIT_IN1,
         lpCreateStruct->hInstance,
         NULL);
-    SendMessage(hEdi0, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_BUFFER-1), 0); // 符号付き64ビットの限界桁数に設定
+    if(!hEdi0) {
+        MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
+    SendMessage(hEdi0, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0); // 符号付き64ビットの限界桁数に設定
     WNDPROC wpedi0_old = (WNDPROC)SetWindowLongPtr(hEdi0, GWLP_WNDPROC, (LONG_PTR)Edit0WindowProc); // サブクラス化
     SetWindowLongPtr(hEdi0, GWLP_USERDATA, (LONG_PTR)wpedi0_old);
     SetFocus(hWnd_focused = hEdi0);
@@ -378,6 +404,10 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         (HMENU)IDC_EDIT_OUT,
         lpCreateStruct->hInstance,
         NULL);
+    if(!hEdi_out) {
+        MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+        return 1;
+    }
     SendMessage(hEdi_out, EM_SETLIMITTEXT, (WPARAM)(MAX_OUTPUT_BUFFER-1), 0); // 文字数制限を最大値に変更
 
     HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -455,7 +485,7 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
     rLogfont.lfQuality = DEFAULT_QUALITY;
     rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-    _tcscpy_s(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
+    lstrcpy(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
     if(hFmes) DeleteObject(hFmes);
     hFmes = CreateFontIndirect(&rLogfont); // フォントを作成
 
@@ -474,7 +504,7 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
     rLogfont.lfQuality = DEFAULT_QUALITY;
     rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-    _tcscpy_s(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
+    lstrcpy(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
     if(hFbtn) DeleteObject(hFbtn);
     hFbtn = CreateFontIndirect(&rLogfont);
 
@@ -500,7 +530,7 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
     rLogfont.lfQuality = DEFAULT_QUALITY;
     rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-    _tcscpy_s(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
+    lstrcpy(rLogfont.lfFaceName, TEXT("MS Shell Dlg"));
     if(hFedi) DeleteObject(hFedi);
     hFedi = CreateFontIndirect(&rLogfont);
 
@@ -510,14 +540,14 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     SendMessage(hBtn_clr, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
     SendMessage(hEdi0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
     SendMessage(hEdi_out, WM_SETFONT, (WPARAM)hFedi, MAKELPARAM(FALSE, 0));
-    if(mode) {
+    if(status.mode) {
         SendMessage(hEdi1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
         SendMessage(hEdi2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
     }
 
     // コントロールの移動とサイズ変更
     btnsize[0] = 64*scrx/700; btnsize[1] = 32*scry/400;
-    if(!mode) {
+    if(!status.mode) {
         MoveWindow(hEdi0, btnsize[0], 0, btnsize[0]*4, btnsize[1], TRUE);
         MoveWindow(hBtn_ok, btnsize[0]*5, 0, btnsize[0], btnsize[1], TRUE);
         MoveWindow(hBtn_abort, btnsize[0]*6, 0, btnsize[0], btnsize[1], TRUE);
@@ -535,7 +565,10 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
 
     if(hBitmap) DeleteObject(hBitmap);
     HDC hdc = GetDC(hwnd);
-    hBitmap = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
+    if(!(hBitmap = CreateCompatibleBitmap(hdc, rect.right, rect.bottom))) {
+        MessageBox(hwnd, tcMes[46], tcMes[19], MB_OK | MB_ICONERROR);
+        PostQuitMessage(1);
+    }
     ReleaseDC(hwnd, hdc);
     SelectObject(hMemDC, hBitmap); // 新サイズの Bitmap を Memory Device Context に設定
     Paint(hwnd);
@@ -558,36 +591,44 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
     PTSTR tcEdit;
     PSTR mbEdit;
     DWORD dwTemp;
-    HANDLE hFile;
+    HANDLE hFile, hHeap;
     OPENFILENAME *ofn;
     WNDPROC defProc;
 
     switch(id) {
         case IDC_BUTTON_OK: // OKボタン
-            if(working) break;
+            if(status.isWorking) break;
             StartCalc(hwnd);
             break;
 
         case IDC_BUTTON_ABORT: // 中断ボタン
-            aborted = true;
+            isAborted = true;
             break;
 
         case IDC_BUTTON_CLEAR: // 履歴消去
-            editlen = (INT)SendMessage(hEdi_out, WM_GETTEXTLENGTH, 0, 0);
-            SendMessage(hEdi_out, EM_SETSEL, 0, editlen);
-            SendMessage(hEdi_out, EM_REPLACESEL, 0, (WPARAM)TEXT(""));
+            SetWindowText(hEdi_out, TEXT(""));
             break;
 
         case IDM_FILE_SAVE_AS: // テキストファイルに保存
 #ifndef UNICODE
             MessageBox(hwnd, tcMes[23], tcMes[21], MB_OK | MB_ICONINFORMATION);
 #endif
-            ofn = (OPENFILENAME*)calloc(1, sizeof(OPENFILENAME));
+            hHeap = GetProcessHeap();
+            ofn = (OPENFILENAME*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, sizeof(OPENFILENAME));
+            if(!ofn) {
+                MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
+                break;
+            }
             ofn->lStructSize = sizeof(OPENFILENAME);
             ofn->hwndOwner = hwnd;
             ofn->lpstrFilter = TEXT("Text File (*.txt)\0*.txt\0")
                                TEXT("All files (*.*)\0*.*\0");
-            ofn->lpstrFile = (PTSTR)malloc(MAX_PATH*sizeof(TCHAR));
+            ofn->lpstrFile = (PTSTR)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, MAX_PATH*sizeof(TCHAR));
+            if(!ofn->lpstrFile) {
+                MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
+                HeapFree(hHeap, 0, ofn);
+                break;
+            }
             ofn->nMaxFile = MAX_PATH;
             ofn->lpstrDefExt = TEXT(".txt");
             ofn->lpstrTitle = tcMes[17];
@@ -597,15 +638,30 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             hFile = CreateFile(ofn->lpstrFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             if(hFile == INVALID_HANDLE_VALUE) {
                 MessageBox(hwnd, tcMes[18], tcMes[19], MB_OK | MB_ICONWARNING);
+                HeapFree(hHeap, 0, ofn->lpstrFile);
+                HeapFree(hHeap, 0, ofn);
                 break;
             }
             editlen = GetWindowTextLength(hEdi_out) + 1;
-            tcEdit = (PTSTR)malloc(editlen*sizeof(TCHAR));
+            tcEdit = (PTSTR)HeapAlloc(hHeap, 0, editlen*sizeof(TCHAR));
+            if(!tcEdit) {
+                MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
+                HeapFree(hHeap, 0, ofn->lpstrFile);
+                HeapFree(hHeap, 0, ofn);
+                break;
+            }
             GetWindowText(hEdi_out, tcEdit, editlen);
 #ifdef UNICODE
-            mblen = WideCharToMultiByte(charset?932:65001, NULL, tcEdit, editlen, NULL, 0, NULL, NULL); // 変換後サイズ取得
-            mbEdit = (PSTR)malloc(mblen*sizeof(CHAR));
-            WideCharToMultiByte(charset?932:65001, NULL, tcEdit, editlen, mbEdit, mblen, NULL, NULL);
+            mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcEdit, editlen, NULL, 0, NULL, NULL); // 変換後サイズ取得
+            mbEdit = (PSTR)HeapAlloc(hHeap, 0, mblen*sizeof(CHAR));
+            if(!mbEdit) {
+                MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
+                HeapFree(hHeap, 0, ofn->lpstrFile);
+                HeapFree(hHeap, 0, ofn);
+                HeapFree(hHeap, 0, tcEdit);
+                break;
+            }
+            WideCharToMultiByte(status.charset?932:65001, NULL, tcEdit, editlen, mbEdit, mblen, NULL, NULL);
             if(WriteFile(hFile, mbEdit, (mblen-1)*sizeof(CHAR), &dwTemp, NULL))
 #else
             if(WriteFile(hFile, tcEdit, (editlen-1)*sizeof(CHAR), &dwTemp, NULL))
@@ -614,10 +670,10 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             else
                 MessageBox(hwnd, tcMes[22], tcMes[19], MB_OK | MB_ICONWARNING);
             CloseHandle(hFile);
-            free(ofn->lpstrFile);
-            free(ofn);
-            free(tcEdit);
-            free(mbEdit);
+            HeapFree(hHeap, 0, ofn->lpstrFile);
+            HeapFree(hHeap, 0, ofn);
+            HeapFree(hHeap, 0, tcEdit);
+            HeapFree(hHeap, 0, mbEdit);
             break;
 
         case IDM_FILE_EXIT: // 終了
@@ -642,19 +698,19 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             break;
 
         case IDM_OPT_PF: // 素因数分解に変更
-            if(!mode) break;
+            if(!status.mode) break;
             CheckMenuRadioItem(hMenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_PF, MF_BYCOMMAND);
             EnableMenuItem(hMenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_GRAYED);
             EnableMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
             SetFocus(hEdi0);
             DestroyWindow(hEdi1); // mode1で追加されたエディットボックスを削除
             DestroyWindow(hEdi2); // mode1で追加されたエディットボックスを削除
-            mode = false;
+            status.mode = 0;
             SendMessage(hwnd, WM_SIZE, 0, 0);
             break;
 
         case IDM_OPT_LCPN: // 素数列挙・数えに変更
-            if(mode) break;
+            if(status.mode) break;
             CheckMenuRadioItem(hMenu, IDM_OPT_PF, IDM_OPT_LCPN, IDM_OPT_LCPN, MF_BYCOMMAND);
             EnableMenuItem(hMenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_ENABLED);
             EnableMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
@@ -669,7 +725,11 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
                 (HMENU)IDC_EDIT_IN2,
                 hInst,
                 NULL);
-            SendMessage(hEdi1, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_BUFFER-1), 0);
+            if(!hEdi1){
+                MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+                PostQuitMessage(1);
+            }
+            SendMessage(hEdi1, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0);
             defProc = (WNDPROC)SetWindowLongPtr(hEdi1, GWLP_WNDPROC, (LONG_PTR)Edit1WindowProc); // サブクラス化
             SetWindowLongPtr(hEdi1, GWLP_USERDATA, (LONG_PTR)defProc);
 
@@ -683,11 +743,15 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
                 (HMENU)IDC_EDIT_IN3,
                 hInst,
                 NULL);
-            SendMessage(hEdi2, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_BUFFER-1), 0);
+            if(!hEdi2) {
+                MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
+                PostQuitMessage(1);
+            }
+            SendMessage(hEdi2, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0);
             defProc = (WNDPROC)SetWindowLongPtr(hEdi2, GWLP_WNDPROC, (LONG_PTR)Edit2WindowProc); // サブクラス化
             SetWindowLongPtr(hEdi2, GWLP_USERDATA, (LONG_PTR)defProc);
 
-            mode = true;
+            status.mode = 1;
             SendMessage(hwnd, WM_SIZE, 0, 0);
             break;
 
@@ -696,22 +760,22 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
                 CheckMenuItem(hMenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_UNCHECKED);
                 EnableMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
                 EnableWindow(hEdi2, TRUE);
-                onlycnt = false;
+                status.onlycnt = 0;
             } else {
                 CheckMenuItem(hMenu, IDM_OPT_ONLYNUM, MF_BYCOMMAND | MF_CHECKED);
                 EnableMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
                 EnableWindow(hEdi2, FALSE);
-                onlycnt = true;
+                status.onlycnt = 1;
             }
             break;
 
         case IDM_OPT_OUTFILE: // 「テキストファイルに出力」
             if(GetMenuState(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND) & MF_CHECKED) {
                 CheckMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_UNCHECKED);
-                usefile = false;
+                status.usefile = 0;
             } else {
                 CheckMenuItem(hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
-                usefile = true;
+                status.usefile = 1;
             }
             break;
 
@@ -780,19 +844,19 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             break;
 
         case IDM_OPT_CHARSET_UTF8:
-            if(!charset) break;
+            if(!status.charset) break;
             CheckMenuRadioItem(hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
-            charset = false;
+            status.charset = 0;
             break;
 
         case IDM_OPT_CHARSET_SJIS:
-            if(charset) break;
+            if(status.charset) break;
             CheckMenuRadioItem(hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_SJIS, MF_BYCOMMAND);
-            charset = true;
+            status.charset = 1;
             break;
 
         case IDM_HELP_HOWTOUSE: // 使い方
-            MessageBox(hwnd, tcMes[mode?8:7], tcMes[14], MB_OK | MB_ICONINFORMATION);
+            MessageBox(hwnd, tcMes[status.mode?8:7], tcMes[14], MB_OK | MB_ICONINFORMATION);
             break;
 
         case IDM_HELP_ABOUT: // このプログラムについて
@@ -815,7 +879,7 @@ void Paint(HWND hwnd) {
     SelectObject(hMemDC, hBrush); // デバイスコンテキストにブラシを設定
     Rectangle(hMemDC, rect.left, rect.top, rect.right, rect.bottom); // 領域いっぱいに四角形を描く
 
-    if(!mode) {
+    if(!status.mode) {
         SelectObject(hMemDC, hPenSys);
         SelectObject(hMemDC, hBshSys);
         Rectangle(hMemDC, 0, 0, btnsize[0], btnsize[1]);
@@ -848,7 +912,7 @@ void Paint(HWND hwnd) {
     SetTextColor(hMemDC, RGB(0, 0, 255));
     SelectObject(hMemDC, hFmes);
     rect.left = 0; rect.right = scrx;
-    if(!mode) {
+    if(!status.mode) {
         rect.top = btnsize[1];
         rect.bottom = scry*9/40;
     } else {
@@ -856,17 +920,18 @@ void Paint(HWND hwnd) {
         rect.bottom = scry*3/10;
     }
 
-    if(working) DrawText(hMemDC, tcMes[28], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    else if(!mode) DrawText(hMemDC, tcMes[29], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-    else if(mode) DrawText(hMemDC, tcMes[30], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    if(status.isWorking) DrawText(hMemDC, tcMes[28], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    else if(!status.mode) DrawText(hMemDC, tcMes[29], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    else if(status.mode) DrawText(hMemDC, tcMes[30], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 
     InvalidateRect(hwnd, NULL, FALSE);
 }
 
-void StartCalc(HWND hwnd){
+void StartCalc(HWND hwnd) {
     DWORD dwTemp;
+    bool isErange = false;
 
-    working = true;
+    status.isWorking = 1;
     EnableWindow(hBtn_ok, FALSE);
     EnableWindow(hEdi0, FALSE);
     EnableWindow(hEdi1, FALSE);
@@ -875,27 +940,31 @@ void StartCalc(HWND hwnd){
     EnableMenuItem(hMenu, 2, MF_BYPOSITION | MF_GRAYED); // 「オプション」メニューをグレーアウト
     DrawMenuBar(hwnd); // メニュー再描画
 
-    SendMessage(hEdi0, WM_GETTEXT, MAX_INPUT_BUFFER, (LPARAM)tcTemp);
-    dwTemp = _stscanf_s(tcTemp, TEXT("%I64d"), &num[0]);
-    if(dwTemp == 0 || dwTemp == EOF) num[0] = 0;
-    if(mode) {
-        SendMessage(hEdi1, WM_GETTEXT, MAX_INPUT_BUFFER, (LPARAM)tcTemp);
-        dwTemp = _stscanf_s(tcTemp, TEXT("%I64d"), &num[1]);
-        if(dwTemp == 0 || dwTemp == EOF) num[1] = 0;
-        SendMessage(hEdi2, WM_GETTEXT, MAX_INPUT_BUFFER, (LPARAM)tcTemp);
-        dwTemp = _stscanf_s(tcTemp, TEXT("%I64d"), &num[2]);
-        if(dwTemp == 0 || dwTemp == EOF) num[2] = 0;
+    SendMessage(hEdi0, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp);
+    errno = 0;
+    num[0] = _tcstoull(tcTemp, NULL, 10);
+    isErange = (errno == ERANGE);
+    if(status.mode) {
+        SendMessage(hEdi1, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp);
+        errno = 0;
+        num[1] = _tcstoull(tcTemp, NULL, 10);
+        isErange = isErange || (errno == ERANGE);
+        SendMessage(hEdi2, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp);
+        errno = 0;
+        num[2] = _tcstoull(tcTemp, NULL, 10);
+        isErange = isErange || (errno == ERANGE);
     }
+    if(isErange) MessageBox(hwnd, tcMes[47], tcMes[21], MB_OK | MB_ICONINFORMATION);
     SetWindowText(hwnd, tcMes[16]);
 
-    if(!mode) hThread = CreateThread(NULL, 0, PrimeFactorization, (LPVOID)hwnd, 0, &dwTemp);
+    if(!status.mode) hThread = CreateThread(NULL, 0, PrimeFactorization, (LPVOID)hwnd, 0, &dwTemp);
     else hThread = CreateThread(NULL, 0, ListPrimeNumbers, (LPVOID)hwnd, 0, &dwTemp);
     SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);
 }
 
 DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
-    LONGLONG N=num[0], cnt=0, i=2;
-    bool chk=false;
+    ULONGLONG N = num[0], cnt=0, i=2;
+    bool chk = false;
     TCHAR tcStr1[MAX_BUFFER] = TEXT(""), tcStr2[MAX_BUFFER] = TEXT("");
     HWND hwnd = (HWND)lpParameter;
 
@@ -906,7 +975,7 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
 
     // 計算
     while(1) {
-        while(i<=N && !aborted) {
+        while(i<=N && !isAborted) {
             if(N%i==0 && N!=i) {
                 chk = true;
                 break;
@@ -918,12 +987,12 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
             if(i==2) i++;
             else i+=2;
         }
-        if(aborted) break;
+        if(isAborted) break;
         if(chk) {
-            wsprintf(tcStr2, TEXT("%I64dx"), i); // 見つけた素因数を文字列に変換・「x」を足す
+            wsprintf(tcStr2, TEXT("%I64ux"), i); // 見つけた素因数を文字列に変換・「x」を足す
             lstrcat(tcStr1, tcStr2); // 結果文字列に追加
         } else {
-            wsprintf(tcStr2, TEXT("%I64d"), N); // その数自身を文字列に変換(素数だった場合)
+            wsprintf(tcStr2, TEXT("%I64u"), N); // その数自身を文字列に変換(素数だった場合)
             lstrcat(tcStr1, tcStr2); // 結果文字列に追加
             break;
         }
@@ -932,13 +1001,13 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
     }
     if(cnt==0 && N>1) lstrcat(tcStr1, tcMes[33]); // 素数だった場合、その旨を追加
 
-    if(aborted) {
+    if(isAborted) {
         PostMessage(hwnd, APP_THREADEND, 0, 0);
         return IDE_ABORT;
     }
 
     // 結果文字列の生成
-    wsprintf(tcStr2, TEXT("%s%I64d = %s"), tcMes[34], num[0], tcStr1);
+    wsprintf(tcStr2, TEXT("%s%I64u = %s"), tcMes[34], num[0], tcStr1);
 
     // Update the window's title and the result box
     OutputToEditbox(hEdi_out, tcStr2);
@@ -952,7 +1021,7 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
 }
 
 DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
-    LONGLONG cnt=0;
+    ULONGLONG cnt = 0;
     DWORD dwTemp;
     int mblen;
     TCHAR tcStr1[MAX_BUFFER], tcStr2[MAX_BUFFER], tcFile[MAX_PATH];
@@ -962,17 +1031,17 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
     HWND hwnd = (HWND)lpParameter;
 
     // 入力値を調整(主に空or"0"の時の対応)
-    if(num[0]<2) num[0]=2;
+    if(num[0]<2) num[0] = 2;
     if(num[0]!=2 && !(num[0]%2)) num[0]++;
-    if(num[1]<1) num[1]=0x7fffffffffffffff;
-    if(num[2]<1) num[2]=0x7fffffffffffffff;
+    if(num[1]<1) num[1] = 0xffffffffffffffff;
+    if(num[2]<1) num[2] = 0xffffffffffffffff;
     if(num[0]>num[1]) {
         PostMessage(hwnd, APP_THREADEND, 0, 0);
         return IDE_INVALID;
     }
 
     // ファイル出力のときの下準備(「個数のみ」のときはテキスト出力しないので外す。以下同様。)
-    if(!onlycnt && usefile) {
+    if(!status.onlycnt && status.usefile) {
 #ifndef UNICODE
         MessageBox(hwnd, tcMes[23], tcMes[21], MB_OK | MB_ICONINFORMATION);
 #endif
@@ -997,11 +1066,11 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
         }
     }
 
-    if(!onlycnt && !usefile) OutputToEditbox(hEdi_out, tcMes[34]);
-    else if(!onlycnt && usefile) {
+    if(!status.onlycnt && !status.usefile) OutputToEditbox(hEdi_out, tcMes[34]);
+    else if(!status.onlycnt && status.usefile) {
 #ifdef UNICODE
-        mblen = WideCharToMultiByte(charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, NULL, 0, NULL, NULL); // 変換後文字数取得
-        WideCharToMultiByte(charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, mbStr, mblen, NULL, NULL);
+        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, NULL, 0, NULL, NULL); // 変換後文字数取得
+        WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, mbStr, mblen, NULL, NULL);
         if(!WriteFile(hFile, mbStr, (mblen-1)*sizeof(CHAR), &dwTemp, NULL)) {
 #else
         if(!WriteFile(hFile, tcMes[34], lstrlenA(tcmes[28])*sizeof(CHAR), &dwTemp, NULL)) {
@@ -1013,19 +1082,19 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
     }
 
     // 計算
-    for(LONGLONG i=num[0]; i<=num[1] && cnt<num[2]; i++) {
-        for(LONGLONG j=2; j<=i && !aborted; j++) {
+    for(ULONGLONG i=num[0]; i<=num[1] && cnt<num[2]; i++) {
+        for(ULONGLONG j=2; j<=i && !isAborted; j++) {
             if(i%j==0 && i!=j) break;
             if(i/j<j || i==j) {
-                if(!onlycnt) {
+                if(!status.onlycnt) {
                     if(cnt) {
-                        wsprintf(tcStr1, TEXT(", %I64d"), i);
-                        if(usefile) wsprintfA(mbStr, ", %I64d", i);
+                        wsprintf(tcStr1, TEXT(", %I64u"), i);
+                        if(status.usefile) wsprintfA(mbStr, ", %I64u", i);
                     } else {
-                        wsprintf(tcStr1, TEXT("%I64d"), i);
-                        if(usefile) wsprintfA(mbStr, "%I64d", i);
+                        wsprintf(tcStr1, TEXT("%I64u"), i);
+                        if(status.usefile) wsprintfA(mbStr, "%I64u", i);
                     }
-                    if(usefile) WriteFile(hFile, mbStr, lstrlenA(mbStr)*sizeof(CHAR), &dwTemp, NULL);
+                    if(status.usefile) WriteFile(hFile, mbStr, lstrlenA(mbStr)*sizeof(CHAR), &dwTemp, NULL);
                     else OutputToEditbox(hEdi_out, tcStr1);
                 }
                 cnt++;
@@ -1033,18 +1102,18 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
             }
             if(j!=2) j++; // 2以外ならもう1つ更に増やす
         }
-        if(aborted || i==0x7fffffffffffffff) break;
+        if(isAborted || i==0xffffffffffffffff) break;
         if(i!=2) i++; // 2以外ならもう1つ更に増やす
     }
 
     // 最後の出力など
-    if(!onlycnt && !usefile) OutputToEditbox(hEdi_out, TEXT("\r\n"));
-    else if(!onlycnt && usefile) WriteFile(hFile, "\r\n", 2*sizeof(CHAR), &dwTemp, NULL);
-    wsprintf(tcStr2, tcMes[aborted?42:41], cnt, num[0], num[1], num[2]);
-    if(!onlycnt && usefile) {
+    if(!status.onlycnt && !status.usefile) OutputToEditbox(hEdi_out, TEXT("\r\n"));
+    else if(!status.onlycnt && status.usefile) WriteFile(hFile, "\r\n", 2*sizeof(CHAR), &dwTemp, NULL);
+    wsprintf(tcStr2, tcMes[isAborted?42:41], cnt, num[0], num[1], num[2]);
+    if(!status.onlycnt && status.usefile) {
 #ifdef UNICODE
-        mblen = WideCharToMultiByte(charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), NULL, 0, NULL, NULL); // 変換後文字数
-        WideCharToMultiByte(charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), mbStr, mblen, NULL, NULL);
+        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), NULL, 0, NULL, NULL); // 変換後文字数
+        WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), mbStr, mblen, NULL, NULL);
         WriteFile(hFile, mbStr, mblen*sizeof(CHAR), &dwTemp, NULL);
 #else
         WriteFile(hfile, tcStr2, lstrlenA(tcStr2)*sizeof(CHAR), &dwtemp, NULL);
@@ -1053,7 +1122,7 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
     }
     OutputToEditbox(hEdi_out, tcStr2);
     SendMessage(hEdi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n")); // '\r': CR, '\n': LF
-    if(aborted){
+    if(isAborted){
         PostMessage(hwnd, APP_THREADEND, 0, 0);
         return IDE_ABORT;
     }

@@ -41,10 +41,11 @@ I created this project by the following procedure:
 1. Type `/D _AArch32` in "C/C++" -> "Command Line" -> "Additional Options."
 1. Type `/D _AArch64` for ARM64 in the same way.
 1. Set "All Configurations" and "All Platforms" to configure.
+1. Change the "C/C++" -> "Command Line" -> "Warning Level" to "Level 4."
 1. At "Manifest Tool" -> "Input/Output," set the "Additional Manifest Files" to `HighDPI.manifest` and the "DPI Awareness" to "Per Monitor High DPI Aware."
    - The `HighDPI.manifest` provided with this project is based on the standard PerMonitorV2 configuration, but removed the `<dpiAware>` tag to prevent from the duplication with the autoset manifest by Visual Studio. This manifest file causes the `Unrecognized Element "dpiAwareness"` warning to be displayed while building for Win32/x64 due to the use of the old tool set for Windows XP, but the manifest is embedded correctly and no problem.
 1. Change the "Resource" -> "General" -> "Culture" to "Japanese (Japan) (0x411) (/l 0x0411)"
-1. Change "C/C++" -> "Code Generation" -> "Runtime Library" to "Multithreaded Debug (/MTd)" and "Multithreaded (/MT)" respectively for "Debug" and "Release."
+1. Change the "C/C++" -> "Code Generation" -> "Runtime Library" to "Multithreaded Debug (/MTd)" and "Multithreaded (/MT)" respectively for "Debug" and "Release."
    - This forces the compiler to statically link necessary libraries and makes the program runnable on computers without the Visual Studio redistributable package.
 
 ## Notes

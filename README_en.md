@@ -5,9 +5,9 @@ This software factors a natural number into prime numbers and looks up prime num
 
 First, the most simple prime factorization algorithm can be described as:
 1. Try to divide the input natural number by all integers between 1 and that number, then judge the first number that could divide the input natural number is a prime factor. If no such number found, then the input number is a prime number.
-1. Then, repeat this procedure with the result of the division until it becomes a prime number.
+1. Then, repeat this process with the result of the division until it becomes a prime number.
 
-This software accelerates the algorithm by using the following properties:
+This software accelerates the algorithm by using the following properties (Trial division):
 - **If a result of a division is smaller than the divisor, you can decide that a dividend is a prime number.**
 - **Even numbers other than 2 are not prime numbers.**
 
@@ -44,11 +44,11 @@ Some antimalware software like Avast! Antivirus wrongly detects software compile
 Use "**AppMain.exe**" for ARMv4I compatible devices, and select an appropriate one from "**Other CPUs**" for other devices. Then, run it in a way that your device requires.
 
 ## How to use
-First, this software launches with the "Prime Factorization" mode. You can switch to the "List/Count Prime Numbers" mode in the options menu. The PC version launches with your OS's UI language, but the Windows CE version always use English as default since Windows CE doesn't support the function to get the UI language information. You can switch the language at "Options -> Language."
+First, this software launches with the "Prime Factorization" mode. Enter a natural number in the input box, and press the OK button or the Enter key to start a calculation. Also, You can switch to the "List/Count Prime Numbers" mode in the options menu. Specify a range to search prime numbers and a max count, and press the OK button or the Enter key to start a calculation. Since the output can get long, this feature supports outputting to a text file (the output box has the 65,535 characters limit). You can also use the file menu to export the contents of the output box to a text file or copy it to the clipboard.
 
-Since the output can get long, the "List/Count Prime Numbers" feature supports outputting to a text file. In default, if the selected file already exists, this software appends the result to it. You can change this behavior at "Options -> Overwrite an existing file." Also, you can save the contents of the output box as a text file. Note that this feature **always overwrites the existing file**.
+The PC version launches with your OS's UI language, but the Windows CE version always use English as default since Windows CE doesn't support the function to get the UI language information. You can switch the language at "Options -> Language."
 
-Further instructions can be found at "Help -> How to use." This displays the proper one for the selected mode.
+You can find further instructions at "Help -> How to use." This displays the proper one for the selected mode.
 
 ## How to install/uninstall
 You don't need to install this software. Just run the executable file directly. Since this software doesn't use the registry or such, you can uninstall by just deleting the files, too.

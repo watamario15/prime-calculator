@@ -1,6 +1,7 @@
 ﻿#include <windows.h>
 #include <windowsx.h>
 #include <tchar.h>
+#include <climits>
 #include "defproc.h"
 
 #ifdef _WIN64
@@ -50,11 +51,11 @@ enum { // 定数定義
     IDS_EN = 100,                 // 英語 String Table ID
     IDE_SUCCESS = 0,              // -----
     IDE_INVALID = 1,              //
-    IDE_ABORT = 2,                // 計算スレッドの返り値
+    IDE_ABORT = 2,                // 計算スレッドの終了コード
     IDE_CANCEL = 3,               //
     IDE_CANNOTOPENFILE = 4,       //
     IDE_CANNOTWRITEFILE = 5,      // -----
-    SIZE_OF_STRING_TABLE = 48,    // String Table の項目数
+    SIZE_OF_STRING_TABLE = 50,    // String Table の項目数
     MAX_INPUT_LENGTH = 21,        // -----
     MAX_OUTPUT_BUFFER = 65536,    // バッファサイズ(ヌル終端を含む)
     MAX_BUFFER = 1024             // -----
@@ -65,20 +66,20 @@ struct PFSTATUS { // 真偽値用ビットフィールド
     unsigned int onlycnt: 1; // (素数列挙)個数のみ出力モード
     unsigned int usefile: 1; // (素数列挙)ファイル出力
     unsigned int charset: 1; // UTF-8: 0, Shift_JIS: 1
-    unsigned int isWorking: 1; // 計算中
+    unsigned int isWorking: 1; // 計算処理中
 } status = {0};
 
 HWND hBtn_ok, hBtn_abort, hBtn_clr, hEdi0, hEdi1, hEdi2, hEdi_out, hWnd_focused; // ウィンドウハンドル
 HINSTANCE hInst; // Instance Handle のグローバルバックアップ
 HMENU hMenu; // メニューハンドル
-HDC hMemDC; // ダブルバッファリング用ハンドル
+HDC hMemDC; // ダブルバッファリング用 device context のハンドル
 HFONT hFmes = NULL, hFbtn = NULL, hFedi = NULL, hFnote = NULL; // 作成するフォント
 HBRUSH hBrush = NULL, hBshSys; // 取得するブラシ
 HPEN hPen = NULL, hPenSys; // 取得するペン
 HANDLE hThread; // 計算スレッドのハンドル
 INT btnsize[2]; // ボタンサイズ ([0]: x, [1]: y)
 ULONGLONG num[3]; // 入力値受付用変数
-volatile bool isAborted = false; // 計算中断フラグ (volatile を外すと最適化で中断できなくなる)
+volatile bool isAborted = false; // 計算中断フラグ (volatile を外すと最適化で中断が効かなくなる)
 TCHAR tcTemp[MAX_BUFFER] /* 仮バッファ */, tcMes[SIZE_OF_STRING_TABLE][MAX_BUFFER] /* リソース文字列受け取り用バッファ */;
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -98,9 +99,9 @@ DWORD WINAPI ListPrimeNumbers(LPVOID);
 
 // エディットボックスの末尾に文字列を追加
 void OutputToEditbox(HWND hwnd, LPCTSTR arg) {
-    INT editlen = (INT)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0);
-    SendMessage(hwnd, EM_SETSEL, editlen, editlen);
-    SendMessage(hwnd, EM_REPLACESEL, 0, (WPARAM)arg);
+    INT editlen = (INT)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0); // 文字列長を取得
+    SendMessage(hwnd, EM_SETSEL, editlen, editlen); // 末尾にキャレットを移動 (選択範囲の最初と最後を共に末尾指定)
+    SendMessage(hwnd, EM_REPLACESEL, 0, (WPARAM)arg); // キャレット位置に追記
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
@@ -223,11 +224,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         HANDLE_MSG(hwnd, WM_TIMER, Main_OnTimer); // タイマー時
         HANDLE_MSG(hwnd, WM_SIZE, Main_OnSize); // ウィンドウサイズ変更時
         HANDLE_MSG(hwnd, WM_PAINT, Main_OnPaint); // 再描画要求を受けたとき
-        HANDLE_MSG(hwnd, WM_COMMAND, Main_OnCommand); // ボタンなどが操作されたとき
+        HANDLE_MSG(hwnd, WM_COMMAND, Main_OnCommand); // ユーザ操作など
 
         case WM_ACTIVATE: // アクティブ化
-            if(LOWORD(wParam) == WA_ACTIVE || LOWORD(wParam) == WA_CLICKACTIVE)
-                SetFocus(hWnd_focused); // 以前フォーカスが当たっていたエディットにフォーカスを戻す     
+            // 以前フォーカスが当たっていたエディットにフォーカスを戻す
+            if(LOWORD(wParam) == WA_ACTIVE || LOWORD(wParam) == WA_CLICKACTIVE) SetFocus(hWnd_focused);
             break;
 
         case 0x02e0: // DPI 値変更時 (WM_DPICHANGED マクロが XP 用 SDK に無いため数値指定)
@@ -280,7 +281,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             EnableMenuItem(hMenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
             DrawMenuBar(hwnd); // メニュー再描画
             Paint(hwnd); // 再描画
-            SetFocus(hWnd_focused); // 直近のフォーカス位置にフォーマットを当てる
+            SetFocus(hWnd_focused); // 以前のフォーカス位置にフォーカスを当てる
             status.isWorking = 0; // 計算中フラグを下ろす
             break;
 
@@ -347,7 +348,7 @@ LRESULT CALLBACK Edit2WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         case WM_CHAR:
             switch((CHAR)wParam) {
                 case VK_RETURN: // Enter
-                    if(!status.isWorking) StartCalc(hwnd); // 計算処理実行
+                    if(!status.isWorking) StartCalc(hwnd); // 計算処理開始
                     return 0;
             } // 実行対象でなければ default に流す(間に別のメッセージ入れちゃだめ!!)
         default:
@@ -388,7 +389,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
         return 1;
     }
-    SendMessage(hEdi0, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0); // 符号付き64ビットの限界桁数に設定
+    SendMessage(hEdi0, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0); // 符号なし64ビット整数の最大桁数に設定
     WNDPROC wpedi0_old = (WNDPROC)SetWindowLongPtr(hEdi0, GWLP_WNDPROC, (LONG_PTR)Edit0WindowProc); // サブクラス化
     SetWindowLongPtr(hEdi0, GWLP_USERDATA, (LONG_PTR)wpedi0_old); // USERDATA に標準 Window Procedure を保存
     SetFocus(hWnd_focused = hEdi0); // ここにフォーカスを当て、直近フォーカス位置も更新する
@@ -407,7 +408,7 @@ BOOL Main_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct) {
         MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
         return 1;
     }
-    SendMessage(hEdi_out, EM_SETLIMITTEXT, (WPARAM)(MAX_OUTPUT_BUFFER-1), 0); // 上限を ULONGLONG 最大桁数に変更
+    SendMessage(hEdi_out, EM_SETLIMITTEXT, (WPARAM)(MAX_OUTPUT_BUFFER-1), 0);
 
     HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST); // 現在のモニタを取得
     MONITORINFOEX mInfo; mInfo.cbSize = sizeof(MONITORINFOEX); // 構造体初期化
@@ -431,7 +432,7 @@ void Main_OnClose(HWND hwnd) {
         KillTimer(hwnd, 1); // 背景色変化etc用のタイマーを止める
         DestroyWindow(hwnd);
     }
-    else SetFocus(hWnd_focused); // 「いいえ」なら直近までフォーカスが当たっていたエディットボックスにフォーカスを戻して続行
+    else SetFocus(hWnd_focused); // 「いいえ」なら以前フォーカスが当たっていたエディットボックスにフォーカスを戻して続行
 }
 
 void Main_OnTimer(HWND hwnd, UINT id) {
@@ -465,7 +466,7 @@ void Main_OnTimer(HWND hwnd, UINT id) {
 void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     INT scrx, scry;
     RECT rect;
-    LOGFONT rLogfont; // 作成するフォントの構造体
+    LOGFONT rLogfont; // 作成するフォントに関する情報
     static HBITMAP hBitmap = NULL; // ダブルバッファリング用 bitmap のハンドル
 
     GetClientRect(hwnd, &rect); // ウィンドウの描画領域サイズを取得
@@ -486,7 +487,7 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
     rLogfont.lfQuality = DEFAULT_QUALITY;
     rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
-    lstrcpy(rLogfont.lfFaceName, TEXT("MS Shell Dlg")); // どの言語版でも適切なフォントが選ばれる指定方法
+    lstrcpy(rLogfont.lfFaceName, TEXT("MS Shell Dlg")); // どの言語版 OS でも適切なフォントが選ばれる指定方法
     if(hFmes) DeleteObject(hFmes); // 旧フォントを破棄
     hFmes = CreateFontIndirect(&rLogfont); // 新フォントを作成
 
@@ -569,8 +570,9 @@ void Main_OnSize(HWND hwnd, UINT state, int cx, int cy) {
     if(!(hBitmap = CreateCompatibleBitmap(hdc, rect.right, rect.bottom))) { // 新サイズの bitmap を作成
         MessageBox(hwnd, tcMes[46], tcMes[19], MB_OK | MB_ICONERROR);
         PostQuitMessage(1);
+        return;
     }
-    ReleaseDC(hwnd, hdc); // デバイスコンテキストを開放
+    ReleaseDC(hwnd, hdc); // デバイスコンテキストを解放
     SelectObject(hMemDC, hBitmap); // 新 bitmap を Memory Device Context に設定
     Paint(hwnd); //再描画
 }
@@ -595,6 +597,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
     HANDLE hFile /* ファイルハンドル */, hHeap /* ヒープハンドル */;
     OPENFILENAME *ofn; // ファイル選択用構造体
     WNDPROC defProc; // 標準 Window Procedure
+    RECT rect;
 
     switch(id) {
         case IDC_BUTTON_OK: // OK ボタン
@@ -623,7 +626,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             ofn->lStructSize = sizeof(OPENFILENAME);
             ofn->hwndOwner = hwnd;
             ofn->lpstrFilter = TEXT("Text File (*.txt)\0*.txt\0")
-                TEXT("All files (*.*)\0*.*\0");
+                               TEXT("All files (*.*)\0*.*\0");
             ofn->lpstrFile = (PTSTR)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, MAX_PATH*sizeof(TCHAR)); // ファイル名領域確保
             if(!ofn->lpstrFile) {
                 MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
@@ -634,7 +637,11 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             ofn->lpstrDefExt = TEXT(".txt");
             ofn->lpstrTitle = tcMes[17];
             ofn->Flags = OFN_OVERWRITEPROMPT;
-            if(!GetSaveFileName(ofn)) break;
+            if(!GetSaveFileName(ofn)) {
+                HeapFree(hHeap, 0, ofn->lpstrFile);
+                HeapFree(hHeap, 0, ofn);
+                break;
+            }
             // ファイル作成 (あれば上書き)
             hFile = CreateFile(ofn->lpstrFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
             if(hFile == INVALID_HANDLE_VALUE) { // 開けなかった場合
@@ -654,7 +661,7 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             GetWindowText(hEdi_out, tcEdit, editlen); // 出力ボックスの内容を取得
 #ifdef UNICODE
             mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcEdit, editlen, NULL, 0, NULL, NULL); // 変換後サイズ取得
-            mbEdit = (PSTR)HeapAlloc(hHeap, 0, mblen*sizeof(CHAR));
+            mbEdit = (PSTR)HeapAlloc(hHeap, 0, mblen*sizeof(CHAR)); // 変換後文字列の領域確保
             if(!mbEdit) {
                 MessageBox(hwnd, tcMes[45], tcMes[19], MB_OK | MB_ICONWARNING);
                 HeapFree(hHeap, 0, ofn->lpstrFile);
@@ -674,7 +681,9 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             HeapFree(hHeap, 0, ofn->lpstrFile);
             HeapFree(hHeap, 0, ofn);
             HeapFree(hHeap, 0, tcEdit);
+#ifdef UNICODE
             HeapFree(hHeap, 0, mbEdit);
+#endif
             break;
 
         case IDM_FILE_EXIT: // 終了
@@ -707,7 +716,8 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             DestroyWindow(hEdi1); // 素数列挙で追加されたエディットボックスを削除
             DestroyWindow(hEdi2); // 同様に削除
             status.mode = 0;
-            SendMessage(hwnd, WM_SIZE, 0, 0); // 再配置させるために WM_SIZE を発行
+            GetClientRect(hwnd, &rect);
+            PostMessage(hwnd, WM_SIZE, 0, MAKEWPARAM(rect.right, rect.bottom)); // 再配置させるために WM_SIZE を発行
             break;
 
         case IDM_OPT_LCPN: // 素数列挙・数えに変更
@@ -729,8 +739,9 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             if(!hEdi1) {
                 MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
                 PostQuitMessage(1);
+                break;
             }
-            SendMessage(hEdi1, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0);
+            SendMessage(hEdi1, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0); // 符号なし64ビット整数の最大桁数に設定
             defProc = (WNDPROC)SetWindowLongPtr(hEdi1, GWLP_WNDPROC, (LONG_PTR)Edit1WindowProc); // サブクラス化
             SetWindowLongPtr(hEdi1, GWLP_USERDATA, (LONG_PTR)defProc); // 元の Window Procedure を USERDATA に保存
 
@@ -747,13 +758,15 @@ void Main_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify) {
             if(!hEdi2) {
                 MessageBox(hwnd, tcMes[44], tcMes[19], MB_OK | MB_ICONERROR);
                 PostQuitMessage(1);
+                break;
             }
             SendMessage(hEdi2, EM_SETLIMITTEXT, (WPARAM)(MAX_INPUT_LENGTH-1), 0);
-            defProc = (WNDPROC)SetWindowLongPtr(hEdi2, GWLP_WNDPROC, (LONG_PTR)Edit2WindowProc); // サブクラス化
+            defProc = (WNDPROC)SetWindowLongPtr(hEdi2, GWLP_WNDPROC, (LONG_PTR)Edit2WindowProc);
             SetWindowLongPtr(hEdi2, GWLP_USERDATA, (LONG_PTR)defProc);
 
             status.mode = 1;
-            SendMessage(hwnd, WM_SIZE, 0, 0); // 再配置させるために WM_SIZE を発行
+            GetClientRect(hwnd, &rect);
+            PostMessage(hwnd, WM_SIZE, 0, MAKEWPARAM(rect.right, rect.bottom)); // 再配置させるために WM_SIZE を発行
             break;
 
         case IDM_OPT_ONLYNUM: // 「個数のみ表示」
@@ -936,11 +949,11 @@ void StartCalc(HWND hwnd) {
     DWORD dwTemp; // DWORD 型仮変数
     bool isErange = false; // ラップアラウンドの有無
 
-    status.isWorking = 1; // 計算中フラグを立てる
+    status.isWorking = 1; // 計算処理中フラグを立てる
     EnableWindow(hBtn_ok, FALSE);    // -----
     EnableWindow(hEdi0, FALSE);      //
     if(status.mode) {                //
-        EnableWindow(hEdi1, FALSE);  // 計算中は使えないコントロールを無効化
+        EnableWindow(hEdi1, FALSE);  // 計算処理中は使えないコントロールを無効化
         EnableWindow(hEdi2, FALSE);  //
     }                                //
     EnableWindow(hBtn_abort, TRUE);  // -----
@@ -950,29 +963,47 @@ void StartCalc(HWND hwnd) {
     SendMessage(hEdi0, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp); // 入力値取得
     errno = 0;
     num[0] = _tcstoull(tcTemp, NULL, 10); // 数値に変換
-    isErange = (errno == ERANGE); // エラー有無を記録
+    isErange = (errno == ERANGE); // ラップアラウンド有無を記録
     if(status.mode) {
         SendMessage(hEdi1, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp);
         errno = 0;
         num[1] = _tcstoull(tcTemp, NULL, 10);
-        isErange = isErange || (errno == ERANGE); // エラー有無を記録 (論理和)
+        isErange = isErange || (errno == ERANGE); // ラップアラウンド有無を記録 (論理和)
         SendMessage(hEdi2, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)tcTemp);
         errno = 0;
         num[2] = _tcstoull(tcTemp, NULL, 10);
         isErange = isErange || (errno == ERANGE);
     }
-    if(isErange) MessageBox(hwnd, tcMes[47], tcMes[21], MB_OK | MB_ICONINFORMATION); // アップアラウンド情報
+    if(isErange) MessageBox(hwnd, tcMes[47], tcMes[21], MB_OK | MB_ICONINFORMATION); // ラップアラウンド検出時
     SetWindowText(hwnd, tcMes[16]); // ウィンドウタイトルを変更
 
     // 計算スレッド開始
     if(!status.mode) hThread = CreateThread(NULL, 0, PrimeFactorization, (LPVOID)hwnd, 0, &dwTemp);
     else hThread = CreateThread(NULL, 0, ListPrimeNumbers, (LPVOID)hwnd, 0, &dwTemp);
-    SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL); // システムの動作を重くしないよう、通常未満の優先度に設定
+    if(hThread) SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL); // システムの動作を重くしないよう、通常未満の優先度に設定
+    else { // スレッド生成失敗時
+        MessageBox(hwnd, tcMes[48], tcMes[19], MB_OK | MB_ICONWARNING);
+        OutputToEditbox(hEdi_out, tcMes[49]);
+        wsprintf(tcTemp, TEXT("%s - %s"), tcMes[0], TARGET_CPU); // 初期タイトル生成
+        SetWindowText(hwnd, tcTemp);
+        if(status.mode) { // 素数列挙専用の処理
+            EnableWindow(hEdi1, TRUE);
+            if(!status.onlycnt) EnableWindow(hEdi2, TRUE);
+        }
+        EnableWindow(hBtn_ok, TRUE);
+        EnableWindow(hEdi0, TRUE);
+        EnableWindow(hBtn_abort, FALSE);
+        EnableMenuItem(hMenu, 2, MF_BYPOSITION | MF_ENABLED); // 「オプション」メニューを再度有効化
+        DrawMenuBar(hwnd); // メニュー再描画
+        Paint(hwnd); // 再描画
+        SetFocus(hWnd_focused); // 以前のフォーカス位置にフォーカスを当てる
+        status.isWorking = 0; // 計算中フラグを下ろす
+    }
 }
 
 // 素因数分解スレッド (lpParameter にはウィンドウハンドルを指定)
 DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
-    ULONGLONG N = num[0] /* 割られる数(入力値で初期化) */, cnt = 0 /* 素因数の個数 */, i = 2 /* 割る数 */;
+    ULONGLONG N = num[0] /* 割られる数(入力値で初期化) */, cnt = 0 /* 素因数の個数 */, i = 2 /* 割る数(素因数候補) */;
     bool chk = false;
     TCHAR tcStr1[MAX_BUFFER] = TEXT(""), tcStr2[MAX_BUFFER] = TEXT("");
     HWND hwnd = (HWND)lpParameter;
@@ -982,7 +1013,7 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
         return IDE_INVALID;
     }
 
-    // 素因数分解
+    // 素因数分解 (試し割り法)
     while(1) {
         while(i<=N && !isAborted) {
             if(N%i==0 && N!=i) { // 素因数発見
@@ -1015,15 +1046,12 @@ DWORD WINAPI PrimeFactorization(LPVOID lpParameter) {
         return IDE_ABORT;
     }
 
-    // 結果文字列の生成
-    wsprintf(tcStr2, TEXT("%s%I64u = %s"), tcMes[34], num[0], tcStr1);
-
-    // ウィンドウタイトルと出力ボックスの更新
-    OutputToEditbox(hEdi_out, tcStr2);
+    wsprintf(tcStr2, TEXT("%s%I64u = %s"), tcMes[34], num[0], tcStr1); // 結果文字列の生成
+    OutputToEditbox(hEdi_out, tcStr2); // 結果出力
     SendMessage(hEdi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n")); // キャレットが末尾にあることが確実ならこれだけで良い
-    wsprintf(tcStr1, TEXT(" - %s"), tcMes[0]); // タイトル後半を構築
-    lstrcat(tcStr2, tcStr1); // 処理結果とタイトル後半を結合
-    SetWindowText(hwnd, tcStr2);
+    wsprintf(tcStr1, TEXT(" - %s"), tcMes[0]); // ウィンドウタイトル後半を構築
+    lstrcat(tcStr2, tcStr1); // 処理結果に結合
+    SetWindowText(hwnd, tcStr2); // ウィンドウタイトル更新
 
     PostMessage(hwnd, APP_THREADEND, 0, 0);
     return IDE_SUCCESS;
@@ -1034,17 +1062,17 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
     ULONGLONG cnt = 0; // 素数の個数
     DWORD dwTemp; // DWORD 型仮変数
     int mblen; // ヌル終端込みの文字コード変換後文字列長
-    TCHAR tcStr1[MAX_BUFFER], tcStr2[MAX_BUFFER], tcFile[MAX_PATH];
+    TCHAR tcStr1[MAX_BUFFER], tcStr2[MAX_BUFFER], tcFile[MAX_PATH] = {0};
     CHAR mbStr[MAX_BUFFER]; // 文字コード変換後文字列
-    HANDLE hFile;
+    HANDLE hFile = NULL;
     OPENFILENAME ofn = {0};
     HWND hwnd = (HWND)lpParameter;
 
     // 入力値を調整(主に空or"0"の時の対応)
     if(num[0]<2) num[0] = 2;
     if(num[0]!=2 && !(num[0]%2)) num[0]++;
-    if(num[1]<1) num[1] = 0xffffffffffffffff; // ULONGLONG の最大値
-    if(num[2]<1) num[2] = 0xffffffffffffffff;
+    if(num[1]<1) num[1] = ULLONG_MAX;
+    if(num[2]<1) num[2] = ULLONG_MAX;
     if(num[0]>num[1]) { // 上端より下端の方が大きいとき
         PostMessage(hwnd, APP_THREADEND, 0, 0); // スレッド終了メッセージを発行(待機無し)
         return IDE_INVALID;
@@ -1079,8 +1107,8 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
     if(!status.onlycnt && !status.usefile) OutputToEditbox(hEdi_out, tcMes[34]);
     else if(!status.onlycnt && status.usefile) {
 #ifdef UNICODE
-        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, NULL, 0, NULL, NULL); // 変換後文字数取得
-        WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, mbStr, mblen, NULL, NULL); // 文字コード変換
+        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, NULL, 0, NULL, NULL);
+        WideCharToMultiByte(status.charset?932:65001, NULL, tcMes[34], lstrlen(tcMes[34])+1, mbStr, mblen, NULL, NULL);
         if(!WriteFile(hFile, mbStr, (mblen-1)*sizeof(CHAR), &dwTemp, NULL)) {
 #else
         if(!WriteFile(hFile, tcMes[34], lstrlenA(tcmes[28])*sizeof(CHAR), &dwTemp, NULL)) {
@@ -1091,12 +1119,12 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
         OutputToEditbox(hEdi_out, tcMes[38]);
     }
 
-    // 計算
-    for(ULONGLONG i=num[0]; i<=num[1] && cnt<num[2]; i++) {
-        for(ULONGLONG j=2; j<=i && !isAborted; j++) {
+    // 計算 (試し割り法)
+    for(ULONGLONG i=num[0]; i<=num[1] && cnt<num[2]; i++) { // 素数候補
+        for(ULONGLONG j=2; j<=i && !isAborted; j++) { // 素因数候補
             if(i%j==0 && i!=j) break; // 素数でない
             if(i/j<j || i==j) { // 素数
-                if(!status.onlycnt) {
+                if(!status.onlycnt) { // 数え上げモードなら出力しない
                     if(cnt) { // 2つ目以降の追記
                         wsprintf(tcStr1, TEXT(", %I64u"), i); // 出力用
                         if(status.usefile) wsprintfA(mbStr, ", %I64u", i); // ファイル出力用 (ASCII 範囲なので変換不要)
@@ -1112,33 +1140,34 @@ DWORD WINAPI ListPrimeNumbers(LPVOID lpParameter) {
             }
             if(j!=2) j++; // 2以外ならもう1つ更に増やす(2以外の偶数のスキップ)
         }
-        if(isAborted || i==0xffffffffffffffff) break;
+        if(isAborted || i==ULLONG_MAX) break;
         if(i!=2) i++; // 2以外ならもう1つ更に増やす(2以外の偶数のスキップ)
     }
 
     // 最後の出力など
     if(!status.onlycnt && !status.usefile) OutputToEditbox(hEdi_out, TEXT("\r\n"));
     else if(!status.onlycnt && status.usefile) WriteFile(hFile, "\r\n", 2*sizeof(CHAR), &dwTemp, NULL);
-    wsprintf(tcStr2, tcMes[isAborted?42:41], cnt, num[0], num[1], num[2]);
+    wsprintf(tcStr2, tcMes[isAborted?42:41], cnt, num[0], num[1], num[2]); // 結果文字列の生成
+    OutputToEditbox(hEdi_out, tcStr2); // 結果出力
+    SendMessage(hEdi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n")); // キャレットが末尾にあることが確実ならこれだけで良い
     if(!status.onlycnt && status.usefile) {
 #ifdef UNICODE
-        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), NULL, 0, NULL, NULL); // 変換後文字数
-        WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), mbStr, mblen, NULL, NULL); // 文字コード変換
+        mblen = WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), NULL, 0, NULL, NULL);
+        WideCharToMultiByte(status.charset?932:65001, NULL, tcStr2, lstrlen(tcStr2), mbStr, mblen, NULL, NULL);
         WriteFile(hFile, mbStr, mblen*sizeof(CHAR), &dwTemp, NULL);
 #else
         WriteFile(hfile, tcStr2, lstrlenA(tcStr2)*sizeof(CHAR), &dwtemp, NULL);
 #endif
         CloseHandle(hFile);
     }
-    OutputToEditbox(hEdi_out, tcStr2);
-    SendMessage(hEdi_out, EM_REPLACESEL, 0, (WPARAM)TEXT("\r\n"));
     if(isAborted) {
         PostMessage(hwnd, APP_THREADEND, 0, 0);
         return IDE_ABORT;
     }
-    wsprintf(tcStr1, TEXT(" - %s"), tcMes[0]); // タイトル後半を構築
-    lstrcat(tcStr2, tcStr1); // 処理結果とタイトル後半を結合
-    SetWindowText(hwnd, tcStr2);
+    wsprintf(tcStr1, TEXT(" - %s"), tcMes[0]); // ウィンドウタイトル後半を構築
+    lstrcat(tcStr2, tcStr1); // 処理結果に結合
+    SetWindowText(hwnd, tcStr2); // ウィンドウタイトル更新
+
     PostMessage(hwnd, APP_THREADEND, 0, 0);
     return IDE_SUCCESS;
 }

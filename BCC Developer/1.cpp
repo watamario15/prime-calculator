@@ -10,6 +10,8 @@
 #define NUMOFSTRINGTABLE 45 // String Table に含まれる文字列の数
 #define APP_SETFOCUS WM_APP // WM_APP から 0xBFFF までは自作メッセージとして使える
 
+typedef LANGID(CALLBACK *GetUserDefaultUILanguage_t)(void);
+
 HWND hwnd, hbtn_ok, hbtn_abort, hbtn_clr, hedi0, hedi1, hedi2, hedi_out, hwnd_temp, hwnd_focused;
 HINSTANCE hInst; // Instance Handle のバックアップ
 HMENU hmenu;
@@ -32,6 +34,8 @@ bool aborted=false, working=false, onlycnt=false, usefile=false, mode=false, ove
 TCHAR tctemp[1024]/*文字列合成・受け付けに使用する仮変数*/, tcmes[NUMOFSTRINGTABLE][1024]/*文章を保存する配列*/, tcFile[MAX_PATH], tcEdit[65540];
 CHAR cEdit[65540];
 WNDPROC wpedi0_old, wpedi1_old, wpedi2_old; // 元の Window Procedure のアドレス格納用変数
+HMODULE kernel32;
+GetUserDefaultUILanguage_t getUserDefaultUILanguage;
 
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK Edit0WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -91,8 +95,17 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
         scry = rect.bottom*2/3;
     }
     if(scrx<800 || scry<480) {scrx=800; scry=480;}
-
-    if(GetUserDefaultUILanguage() == 0x0411){ // UIが日本語環境なら日本語リソースを読み込む
+    
+    
+    kernel32 = LoadLibrary(TEXT("Kernel32.dll"));
+    if (kernel32) {
+        getUserDefaultUILanguage = (GetUserDefaultUILanguage_t)(void *)GetProcAddress(kernel32, "GetUserDefaultUILanguage");
+        if (!getUserDefaultUILanguage) {
+            FreeLibrary(kernel32);
+            kernel32 = NULL;
+        }
+}
+    if(getUserDefaultUILanguage && getUserDefaultUILanguage() == 0x0411){ // UIが日本語環境なら日本語リソースを読み込む
         for(int i=0; i<NUMOFSTRINGTABLE; i++) LoadString(hInstance, i+1000, tcmes[i], sizeof(tcmes[0])/sizeof(tcmes[0][0]));
         hmenu = LoadMenu(hInst, TEXT("Res_JapaneseMenu"));
     } else{ // それ以外なら英語リソースを読み込む
@@ -184,7 +197,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         case WM_CREATE: // 最初に出されるメッセージ
             // メニューの初期化
             SetMenu(hWnd, hmenu);
-            if(GetUserDefaultUILanguage() == 0x0411) CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
+            if(getUserDefaultUILanguage && getUserDefaultUILanguage() == 0x0411) CheckMenuRadioItem(hmenu, 2070, 2071, 2070, MF_BYCOMMAND);
             else CheckMenuRadioItem(hmenu, 2070, 2071, 2071, MF_BYCOMMAND);
             CheckMenuRadioItem(hmenu, 2051, 2052, 2051, MF_BYCOMMAND);
             EnableMenuItem(hmenu, 2060, MF_BYCOMMAND | MF_GRAYED);
@@ -544,6 +557,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             break;
 
         case WM_DESTROY:
+            if (kernel32) FreeLibrary(kernel32);
             PostQuitMessage(0);
             break;
 

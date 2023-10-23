@@ -1,0 +1,286 @@
+#include <winver.h>
+
+//
+// Version Information
+//
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     2, 2, 0, 0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "041104b0"
+        {
+            VALUE "Comments",         "素数関連の計算を行うシンプルなフリーソフトウェアです。1～9223372036854775807の自然数に対応しています。\0"
+            VALUE "FileDescription",  "素因数分解プログラム\0"
+            VALUE "FileVersion",      "2.2\0"
+            VALUE "InternalName",     "Prime Calculator\0"
+            VALUE "LegalCopyright",   "? 2018-2023 watamario15\0"
+            VALUE "ProductName",      "素因数分解 for Windows PC\0"
+            VALUE "ProductVersion",   "2.2\0"
+        }
+        BLOCK "040904b0"
+        {
+            VALUE "Comments",         "This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\0"
+            VALUE "FileDescription",  "Prime Calculator\0"
+            VALUE "FileVersion",      "2.2\0"
+            VALUE "InternalName",     "Prime Calculator\0"
+            VALUE "LegalCopyright",   "? 2018-2023 watamario15\0"
+            VALUE "ProductName",      "Prime Calculator for Windows PC\0"
+            VALUE "ProductVersion",   "2.2\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x411, 1200, 0x409, 1200
+    }
+}
+
+
+//
+// Icon
+//
+
+ResIcon ICON "app.ico"
+
+
+//
+// Menu
+//
+
+ResMenu_JA MENU
+{
+    POPUP "ファイル(&F)"
+    {
+        MENUITEM "ファイルに保存(&S)", 100
+        MENUITEM "終了(&X)", 101
+    }
+    POPUP "編集(&E)"
+    {
+        MENUITEM "切り取り(&T)", 120
+        MENUITEM "コピー(&C)", 121
+        MENUITEM "貼り付け(&P)", 122
+        MENUITEM "全選択(&A)", 123
+    }
+    POPUP "オプション(&O)"
+    {
+        MENUITEM "素因数分解(&F)", 140
+        MENUITEM "素数列挙・数え(&C)", 141
+        MENUITEM SEPARATOR
+        MENUITEM "個数のみ表示(&N)", 142
+        MENUITEM "テキストファイルに出力(&T)", 143
+        MENUITEM SEPARATOR
+        POPUP "&Language"
+        {
+            MENUITEM "日本語 (&J)", 145
+            MENUITEM "&English", 146
+        }
+        POPUP "文字コード (&C)"
+        {
+            MENUITEM "&UTF-8", 147
+            MENUITEM "&SHIFT_JIS", 148
+        }
+    }
+    POPUP "ヘルプ(&H)"
+    {
+        MENUITEM "使い方(&U)", 160
+        MENUITEM "このプログラムについて(&A)", 161
+    }
+}
+
+ResMenu_EN MENU
+{
+    POPUP "&File"
+    {
+        MENUITEM "&Save As...", 100
+        MENUITEM "E&xit", 101
+    }
+    POPUP "&Edit"
+    {
+        MENUITEM "Cu&t", 120
+        MENUITEM "&Copy", 121
+        MENUITEM "&Paste", 122
+        MENUITEM "Select &All", 123
+    }
+    POPUP "&Options"
+    {
+        MENUITEM "Prime &Factorization", 140
+        MENUITEM "List/&Count Prime Numbers", 141
+        MENUITEM SEPARATOR
+        MENUITEM "Display only &number of prime numbers", 142
+        MENUITEM "Output to a &text file", 143
+        MENUITEM SEPARATOR
+        POPUP "&Language"
+        {
+            MENUITEM "日本語 (&J)", 145
+            MENUITEM "&English", 146
+        }
+        POPUP "&Charset"
+        {
+            MENUITEM "&UTF-8", 147
+            MENUITEM "&SHIFT_JIS", 148
+        }
+    }
+    POPUP "&Help"
+    {
+        MENUITEM "How to &use", 160
+        MENUITEM "&About this software", 161
+    }
+}
+
+
+//
+// Accelerators
+//
+
+ResAccel ACCELERATORS
+{
+    "^A", 123 // Sync with the menu's "Select All"
+}
+
+
+//
+// Manifest for PC platforms (high DPI and common controls version 6)
+//
+
+#if !(defined UNDER_CE) && !(defined NOMANIFEST)
+1 MANIFEST app.manifest
+#endif
+
+
+//
+// String Table
+//
+
+STRINGTABLE
+{
+    // Japanese
+    0 "素因数分解プログラム"
+    1 "素因数分解 for Windows PC Ver. 2.2\012\012\
+素数関連の計算を行うシンプルなソフトウェアです。1～9223372036854775807 の自然数に対応しています。\012\
+このソフトウェアは CC-BY-SA 3.0 でライセンスされます。"
+    2 "開発環境: "
+    3 "プログラム種別: "
+    4 "CPUアーキテクチャ: "
+    5 "ビルド日時: "
+    6 "? 2018-2021 watamario15\012? 2018 Sum39796 タスク管理(https://brain.fandom.com/ja/wiki/%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB:%E3%82%BF%E3%82%B9%E3%82%AF%E7%AE%A1%E7%90%86.png) - CC-BY-SA 3.0 / Adapted."
+    7 "入力された自然数を素因数分解します。素数判定にも利用できます。\012\
+上の入力ボックスに自然数を入力し、OK ボタンまたは Enter で処理を開始します。\012\
+巨大な素因数を持つ自然数を処理するのには時間がかかります。あまりに長く、待てない場合は中断ボタンで中断できます。\012\
+結果及びエラー内容は、画面中央のボックスに出力されます。\012\
+上のメニューバーのオプションから、素数列挙・数え上げの機能に切り替えられます。"
+    8 "入力された範囲で素数の列挙、数え上げを行います。\012\
+上の各入力ボックスに自然数を入力し、OK ボタンまたは Enter で処理を開始します。空白または0を入力すると、無制限として扱われます。\012\
+入力内容によってはかなりの時間がかかる場合があります。その場合は中断ボタンで中断できます。\012\
+結果及びエラー内容は、画面中央のボックスに出力されます。\012\
+上のメニューバーのオプションから、出力を調整できます。テキストファイル出力を指定すると、結果が指定したテキストファイルに出力されます。\012\
+同様にオプションから、素因数分解の機能に切り替えられます。"
+    9 "OK"
+    10 "中断"
+    11 "履歴消去"
+    12 "本当に終了しますか？"
+    13 "プログラムの終了"
+    14 "使い方"
+    15 "このプログラムについて"
+    16 "計算中...しばらくお待ち下さい..."
+    17 "保存先の指定"
+    18 "ファイルの作成またはオープンに失敗しました。書き込み禁止になっていないかを確認してください。"
+    19 "エラー"
+    20 "出力ボックスの内容をテキストファイルに書き出しました。"
+    21 "情報"
+    22 "出力ファイルへの書き込みに失敗しました。別のパスで再試行してください。"
+    23 "このプログラムは ANSI モードでコンパイルされているため、出力は文字コード設定に関わらず ANSI (日本では Shift_JIS) で行われます。"
+    24 "自然数:"
+    25 "最小値:"
+    26 "最大値:"
+    27 "個数上限:"
+    28 "計算中です..."
+    29 "素因数分解したい自然数を入力して下さい"
+    30 "素数を探す範囲と最大個数を入力して下さい"
+    31 "無効な値が入力されました｡自然数(正整数)を入力しているか確認してください｡"
+    32 "エラー: 無効な値(自然数のみ対応)\015\012"
+    33 " (素数)"
+    34 "結果: "
+    35 "無効な値が入力されました｡"
+    36 "エラー: 無効な値\015\012"
+    37 "結果の出力先指定"
+    38 "エラー: ファイルの作成またはオープンに失敗\015\012"
+    39 "エラー: テキストファイル書き込み失敗\015\012"
+    40 "計算結果をテキストファイルに出力しています...\015\012"
+    41 "合計個数: %I64u (範囲: %I64u以上%I64u以下, 個数上限: %I64u)"
+    42 "[中断] 合計個数: %I64u以上 (範囲: %I64u以上%I64u以下, 個数上限: %I64u)"
+    43 "RegisterClassEx に失敗しました。"
+    44 "CreateWindowExW に失敗しました。"
+    45 "メモリ確保に失敗しました。"
+    46 "画面バッファの作成に失敗しました。メモリ不足の可能性があります。"
+    47 "対応する最大値より大きな値が指定されました。対応する最大値で置き換えます。"
+    48 "計算スレッドの作成に失敗しました。"
+    49 "エラー: 計算スレッド作成失敗\015\012"
+
+    // English
+    100 "Prime Calculator"
+    101 "Prime Calculator for Windows PC Ver. 2.2\012\012\
+This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\012\
+This software is licensed under the CC-BY-SA 3.0 License."
+    102 "Development environment: "
+    103 "Application type: "
+    104 "CPU architecture: "
+    105 "Build date: "
+    106 "? 2018-2021 watamario15\012? 2018 Sum39796 タスク管理(https://brain.fandom.com/ja/wiki/%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB:%E3%82%BF%E3%82%B9%E3%82%AF%E7%AE%A1%E7%90%86.png) - CC-BY-SA 3.0 / Adapted."
+    107 "In this mode, this software factors your natural numbers. You can also use this feature for prime number deciding.\012\
+Enter a natural number in the input box, and press the OK button or the Enter key to start a calculation.\012\
+It may take much time to calculate depending on your input. You can use the Abort button in such cases.\012\
+Results and errors will be displayed on the box located at the center of the screen.\012\
+You can switch to the List/Count Prime Numbers feature in the options menu."
+    108 "In this mode, this software lists and counts prime numbers in the entered range.\012\
+Enter natural numbers in input boxes, and press the OK button or the Enter key to start a calculation. Blank or 0 will be taken as unlimited.\012\
+It may take much time to calculate depending on your input. You can use the Abort button in such cases.\012\
+Results and errors will be displayed on the box located at the center of the screen.\012\
+You can configure outputs in the options menu. If ""Output to a text file"" is checked, this software writes the result on a specified text file.\012\
+You can switch to the Prime Factorization feature in the options menu."
+    109 "OK"
+    110 "Abort"
+    111 "Clear History"
+    112 "Are you sure you want to quit this software?"
+    113 "Quitting"
+    114 "How to use"
+    115 "About this software"
+    116 "Processing... Please wait..."
+    117 "Destination"
+    118 "Failed to create or open the file. Make sure the file is not read-only."
+    119 "Error"
+    120 "Contents of the output box have been saved as the text file."
+    121 "Information"
+    122 "Failed to write on the file. Try again with another path."
+    123 "This program is compiled in ANSI mode, and the output file will be in the ANSI charset not using the charset configuration."
+    124 "Number:"
+    125 "Min:"
+    126 "Max:"
+    127 "Limit:"
+    128 "Calcurating..."
+    129 "Enter a natural number to factor."
+    130 "Enter a range and a limit to look for."
+    131 "An invalid number was entered. Make sure you entered a natural number."
+    132 "Error: Invalid number (only natural numbers are supported)\015\012"
+    133 " (Prime Number)"
+    134 "Result: "
+    135 "An invalid number was entered."
+    136 "Error: Invalid number\015\012"
+    137 "Destination"
+    138 "Error: Failed to create or open the file.\015\012"
+    139 "Error: Failed to write on the file.\015\012"
+    140 "Writing the result on the text file...\015\012"
+    141 "Number of prime numbers: %I64u (Range: Between %I64u and %I64u, Limit: %I64u)"
+    142 "[Aborted] Number of prime numbers: More than %I64u (Range: Between %I64u and %I64u, Limit: %I64u)"
+    143 "RegisterClassEx failed."
+    144 "CreateWindowExW failed."
+    145 "Failed to allocate a memory."
+    146 "Failed to create a display buffer. The insufficiency of the memory may cause this error."
+    147 "You specified too large number(s). Replacing them with the upper limit."
+    148 "Failed to create a calculation thread."
+    149 "Error: Failed to create a calculation thread.\015\012"
+}

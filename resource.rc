@@ -1,0 +1,281 @@
+#include <winver.h>
+#include "resource.h"
+#pragma code_page(65001)
+
+//
+// Version Information
+//
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     2, 2, 0, 0
+FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+FILEFLAGS       0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "041104b0"
+        {
+            VALUE "Comments",         "素数関連の計算を行うシンプルなフリーソフトウェアです。1～9223372036854775807の自然数に対応しています。\0"
+            VALUE "FileDescription",  "素因数分解0"
+            VALUE "FileVersion",      "2.2\0"
+            VALUE "InternalName",     "Prime Calculator\0"
+            VALUE "LegalCopyright",   "© 2018-2023 watamario15\0"
+            VALUE "ProductName",      "素因数分解 for Windows PC\0"
+            VALUE "ProductVersion",   "2.2\0"
+        }
+        BLOCK "040904b0"
+        {
+            VALUE "Comments",         "This simple free software performs calculations related to prime numbers. Integers between 1 and 9223372036854775807 are supported.\0"
+            VALUE "FileDescription",  "Prime Calculator\0"
+            VALUE "FileVersion",      "2.2\0"
+            VALUE "InternalName",     "Prime Calculator\0"
+            VALUE "LegalCopyright",   "© 2018-2023 watamario15\0"
+            VALUE "ProductName",      "Prime Calculator for Windows PC\0"
+            VALUE "ProductVersion",   "2.2\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x411, 1200, 0x409, 1200
+    }
+}
+
+
+//
+// Icon
+//
+
+ResIcon ICON "app.ico"
+
+
+//
+// Menu
+//
+
+ResMenu_JA MENU
+{
+    POPUP "ファイル(&F)"
+    {
+        MENUITEM "ファイルに保存(&S)", IDM_FILE_SAVE_AS
+        MENUITEM "終了(&X)", IDM_FILE_EXIT
+    }
+    POPUP "編集(&E)"
+    {
+        MENUITEM "切り取り(&T)", IDM_EDIT_CUT
+        MENUITEM "コピー(&C)", IDM_EDIT_COPY
+        MENUITEM "貼り付け(&P)", IDM_EDIT_PASTE
+        MENUITEM "全選択(&A)", IDM_EDIT_SELECT_ALL
+    }
+    POPUP "オプション(&O)"
+    {
+        MENUITEM "素因数分解(&F)", IDM_OPT_PF
+        MENUITEM "素数列挙・数え(&C)", IDM_OPT_PE
+        MENUITEM SEPARATOR
+        MENUITEM "個数のみ表示(&N)", IDM_OPT_CNTONLY
+        MENUITEM "テキストファイルに出力(&T)", IDM_OPT_OUTFILE
+        MENUITEM SEPARATOR
+        POPUP "&Language"
+        {
+            MENUITEM "日本語 (&J)", IDM_OPT_LANG_JA
+            MENUITEM "&English", IDM_OPT_LANG_EN
+        }
+        POPUP "文字コード (&C)"
+        {
+            MENUITEM "&UTF-8", IDM_OPT_CHARSET_UTF8
+            MENUITEM "&SHIFT_JIS", IDM_OPT_CHARSET_SJIS
+        }
+    }
+    POPUP "ヘルプ(&H)"
+    {
+        MENUITEM "使い方(&U)", IDM_HELP_HOWTOUSE
+        MENUITEM "このプログラムについて(&A)", IDM_HELP_ABOUT
+    }
+}
+
+ResMenu_EN MENU
+{
+    POPUP "&File"
+    {
+        MENUITEM "&Save As...", IDM_FILE_SAVE_AS
+        MENUITEM "E&xit", IDM_FILE_EXIT
+    }
+    POPUP "&Edit"
+    {
+        MENUITEM "Cu&t", IDM_EDIT_CUT
+        MENUITEM "&Copy", IDM_EDIT_COPY
+        MENUITEM "&Paste", IDM_EDIT_PASTE
+        MENUITEM "Select &All", IDM_EDIT_SELECT_ALL
+    }
+    POPUP "&Options"
+    {
+        MENUITEM "Prime &Factorization", IDM_OPT_PF
+        MENUITEM "&Enumerate Prime Numbers", IDM_OPT_PE
+        MENUITEM SEPARATOR
+        MENUITEM "Show only &number of prime numbers", IDM_OPT_CNTONLY
+        MENUITEM "Output to a &text file", IDM_OPT_OUTFILE
+        MENUITEM SEPARATOR
+        POPUP "&Language"
+        {
+            MENUITEM "日本語 (&J)", IDM_OPT_LANG_JA
+            MENUITEM "&English", IDM_OPT_LANG_EN
+        }
+        POPUP "&Charset"
+        {
+            MENUITEM "&UTF-8", IDM_OPT_CHARSET_UTF8
+            MENUITEM "&SHIFT_JIS", IDM_OPT_CHARSET_SJIS
+        }
+    }
+    POPUP "&Help"
+    {
+        MENUITEM "How to &use", IDM_HELP_HOWTOUSE
+        MENUITEM "&About this software", IDM_HELP_ABOUT
+    }
+}
+
+
+//
+// Accelerators
+//
+
+ResAccel ACCELERATORS
+{
+    "^A", IDM_EDIT_SELECT_ALL
+}
+
+
+//
+// Manifest for PC platforms (high DPI and common controls version 6)
+//
+
+#if !(defined UNDER_CE) && !(defined NOMANIFEST)
+1 MANIFEST app.manifest
+#endif
+
+
+//
+// String Table
+//
+
+STRINGTABLE
+{
+    IDS_APPNAME "Prime Calculator"
+    IDS_ABOUT "Prime Calculator for Windows PC Ver. 2.2\012\012\
+This simple free software performs calculations related to prime numbers. Natural numbers within 64-bit range are supported.\012\
+This software is licensed under the MIT License."
+    IDS_BUILD "Build date: "
+    IDS_COPYRIGHT "© 2018-2023 watamario15"
+    IDS_PFHELP "In this mode, this software factors your natural numbers. You can also use this feature for prime number deciding.\012\
+Enter a natural number in the input box and press the OK button or the Enter key, to get the result.\012\
+It may take much time to calculate depending on your input. You can use the Abort button in such cases.\012\
+Results and errors will be displayed on the box located at the center of the screen.\012\
+You can switch to the Enumerate Prime Numbers feature in the options menu."
+    IDS_PEHELP "In this mode, this software enumerates prime numbers within the specified range.\012\
+Specify a range to enumerate prime numbers and a max count within, and press the OK button or the Enter key to start. Blank or 0 will be taken as unlimited.\012\
+It may take much time to calculate depending on your input. You can use the Abort button in such cases.\012\
+Results and errors will be displayed on the box located at the center of the screen.\012\
+You can configure outputs in the options menu. If ""Output to a text file"" is checked, this software writes the result on a specified text file.\012\
+You can switch to the Prime Factorization feature in the options menu."
+    IDS_OK "OK"
+    IDS_ABORT "Abort"
+    IDS_CLRHST "Clear History"
+    IDS_CFMQUIT "Are you sure you want to quit this software?"
+    IDS_CFMQUIT_TITLE "Quitting"
+    IDS_HELP_TITLE "How to use"
+    IDS_ABOUT_TITLE "About this software"
+    IDS_RUNNING_TITLE "Processing... Please wait..."
+    IDS_SAVE_TITLE "Destination"
+    IDS_EOPEN "Failed to create or open the file. Make sure the file is not read-only."
+    IDS_ERROR "Error"
+    IDS_FILEDONE "Contents of the output box have been saved as the text file."
+    IDS_INFO "Information"
+    IDS_EWRITE "Failed to write on the file. Try again with another path."
+    IDS_ANSI "This program is compiled in ANSI mode thus the output file will be in the ANSI charset, not respecting the charset configuration."
+    IDS_NUMBER "Number:"
+    IDS_LOWERBOUND "Min:"
+    IDS_UPPERBOUND "Max:"
+    IDS_LIMIT "Limit:"
+    IDS_RUNNING "Calculating..."
+    IDS_PFMSG "Enter a natural number to factor."
+    IDS_PEMSG "Enter a range and a limit to enumerate within."
+    IDS_PFINVALID "An invalid number was entered. Make sure you entered a natural number."
+    IDS_PFINVALID_OUT "Error: Invalid number (only natural numbers are supported)\015\012"
+    IDS_PFPRIME " (Prime Number)"
+    IDS_PFRESULT "Result: "
+    IDS_PEINVALID "An invalid number was entered."
+    IDS_PEINVALID_OUT "Error: Invalid number\015\012"
+    IDS_OUT_TITLE "Destination"
+    IDS_EOPEN_OUT "Error: Failed to create or open the file.\015\012"
+    IDS_EWRITE_OUT "Error: Failed to write on the file.\015\012"
+    IDS_RUNFILE "Writing the result on the text file...\015\012"
+    IDS_PERESULT "Number of prime numbers: %I64u (Range: Between %I64u and %I64u, Limit: %I64u numbers)"
+    IDS_PEABORT "[Aborted] Number of prime numbers: More than %I64u (Range: Between %I64u and %I64u, Limit: %I64u numbers)"
+    IDS_EREGCL "RegisterClassW failed."
+    IDS_ECRTWND "CreateWindowExW failed."
+    IDS_EALLOC "Failed to allocate a memory."
+    IDS_ESCRBUF "Failed to create a display buffer. Insufficiency of memory may cause this error."
+    IDS_WLARGE "You specified too large number(s). Replacing them with the largest number supported."
+    IDS_ETHREAD "Failed to create a calculation thread."
+    IDS_ETHREAD_OUT "Error: Failed to create a calculation thread.\015\012"
+
+    // Japanese
+    IDS_JA_APPNAME "素因数分解"
+    IDS_JA_ABOUT "素因数分解 for Windows PC Ver. 2.2\012\012\
+素数関連の計算を行うシンプルなソフトウェアです。64 ビット範囲の自然数に対応しています。\012\
+このソフトウェアは MIT License でライセンスされます。"
+    IDS_JA_BUILD "ビルド日時："
+    IDS_JA_COPYRIGHT "© 2018-2023 watamario15"
+    IDS_JA_PFHELP "入力された自然数を素因数分解します。素数判定にも利用できます。\012\
+上の入力ボックスに自然数を入力し、OK ボタンまたは Enter で処理を開始します。\012\
+巨大な素因数を持つ自然数を処理するのには時間がかかります。あまりに長く、待てない場合は中断ボタンで中断できます。\012\
+結果及びエラー内容は、画面中央のボックスに出力されます。\012\
+上のメニューバーのオプションから、素数列挙・数え上げの機能に切り替えられます。"
+    IDS_JA_PEHELP "入力された範囲で素数の列挙、数え上げを行います。\012\
+上の各入力ボックスに自然数を入力し、OK ボタンまたは Enter で処理を開始します。空白または 0 を入力すると、無制限として扱われます。\012\
+入力内容によってはかなりの時間がかかる場合があります。その場合は中断ボタンで中断できます。\012\
+結果及びエラー内容は、画面中央のボックスに出力されます。\012\
+上のメニューバーのオプションから、出力を調整できます。テキストファイル出力を指定すると、結果が指定したテキストファイルに出力されます。\012\
+同様にオプションから、素因数分解の機能に切り替えられます。"
+    IDS_JA_OK "OK"
+    IDS_JA_ABORT "中断"
+    IDS_JA_CLRHST "履歴消去"
+    IDS_JA_CFMQUIT "本当に終了しますか？"
+    IDS_JA_CFMQUIT_TITLE "プログラムの終了"
+    IDS_JA_HELP_TITLE "使い方"
+    IDS_JA_ABOUT_TITLE "このプログラムについて"
+    IDS_JA_RUNNING_TITLE "計算中...しばらくお待ち下さい..."
+    IDS_JA_SAVE_TITLE "保存先の指定"
+    IDS_JA_EOPEN "ファイルの作成またはオープンに失敗しました。書き込み禁止になっていないかを確認してください。"
+    IDS_JA_ERROR "エラー"
+    IDS_JA_FILEDONE "出力ボックスの内容をテキストファイルに書き出しました。"
+    IDS_JA_INFO "情報"
+    IDS_JA_EWRITE "出力ファイルへの書き込みに失敗しました。別のパスで再試行してください。"
+    IDS_JA_ANSI "このプログラムは ANSI モードでコンパイルされているため、出力は文字コード設定に関わらず ANSI（日本では Shift_JIS）で行われます。"
+    IDS_JA_NUMBER "自然数："
+    IDS_JA_LOWERBOUND "最小値："
+    IDS_JA_UPPERBOUND "最大値："
+    IDS_JA_LIMIT "個数上限："
+    IDS_JA_RUNNING "計算中です..."
+    IDS_JA_PFMSG "素因数分解したい自然数を入力して下さい"
+    IDS_JA_PEMSG "素数を探す範囲と最大個数を入力して下さい"
+    IDS_JA_PFINVALID "無効な値が入力されました｡自然数（正整数）を入力しているか確認してください｡"
+    IDS_JA_PFINVALID_OUT "エラー: 無効な値（自然数のみ対応）\015\012"
+    IDS_JA_PFPRIME "（素数）"
+    IDS_JA_PFRESULT "結果："
+    IDS_JA_PEINVALID "無効な値が入力されました｡"
+    IDS_JA_PEINVALID_OUT "エラー：無効な値\015\012"
+    IDS_JA_OUT_TITLE "結果の出力先指定"
+    IDS_JA_EOPEN_OUT "エラー：ファイルの作成またはオープンに失敗\015\012"
+    IDS_JA_EWRITE_OUT "エラー：テキストファイル書き込み失敗\015\012"
+    IDS_JA_RUNFILE "計算結果をテキストファイルに出力しています...\015\012"
+    IDS_JA_PERESULT "合計個数: %I64u（範囲: %I64u以上%I64u以下, 個数上限: %I64u）"
+    IDS_JA_PEABORT "［中断］合計個数: %I64u以上（範囲: %I64u以上%I64u以下, 個数上限: %I64u）"
+    IDS_JA_EREGCL "RegisterClassW に失敗しました。"
+    IDS_JA_ECRTWND "CreateWindowExW に失敗しました。"
+    IDS_JA_EALLOC "メモリ確保に失敗しました。"
+    IDS_JA_ESCRBUF "画面バッファの作成に失敗しました。メモリ不足の可能性があります。"
+    IDS_JA_WLARGE "対応する最大値より大きな値が指定されました。対応する最大値で置き換えます。"
+    IDS_JA_ETHREAD "計算スレッドの作成に失敗しました。"
+    IDS_JA_ETHREAD_OUT "エラー：計算スレッド作成失敗\015\012"
+}

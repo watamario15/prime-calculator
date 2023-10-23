@@ -1,0 +1,151 @@
+#ifndef RESOURCE_H_
+#define RESOURCE_H_
+
+// Control ID
+#define IDC_BUTTON_OK 0
+#define IDC_BUTTON_ABORT 1
+#define IDC_BUTTON_CLEAR 2
+#define IDC_EDIT_IN1 20
+#define IDC_EDIT_IN2 21
+#define IDC_EDIT_IN3 22
+#define IDC_EDIT_OUT 23
+
+// Menu ID
+#define IDM_FILE_SAVE_AS 100
+#define IDM_FILE_EXIT 101
+#define IDM_EDIT_CUT 120
+#define IDM_EDIT_COPY 121
+#define IDM_EDIT_PASTE 122
+#define IDM_EDIT_SELECT_ALL 123
+#define IDM_OPT_PF 140
+#define IDM_OPT_PE 141
+#define IDM_OPT_CNTONLY 142
+#define IDM_OPT_OUTFILE 143
+#define IDM_OPT_LANG_JA 145
+#define IDM_OPT_LANG_EN 146
+#define IDM_OPT_CHARSET_UTF8 147
+#define IDM_OPT_CHARSET_SJIS 148
+#define IDM_HELP_HOWTOUSE 160
+#define IDM_HELP_ABOUT 161
+
+// Number of items in the String Table
+#define SIZE_OF_STRING_TABLE 50
+
+// String Table ID
+#define IDS_EN 0
+#define IDS_JA 100
+
+#define IDS_APPNAME 0
+#define IDS_ABOUT 1
+#define IDS_BUILD 5
+#define IDS_COPYRIGHT 6
+#define IDS_PFHELP 7
+#define IDS_PEHELP 8
+#define IDS_OK 9
+#define IDS_ABORT 10
+#define IDS_CLRHST 11
+#define IDS_CFMQUIT 12
+#define IDS_CFMQUIT_TITLE 13
+#define IDS_HELP_TITLE 14
+#define IDS_ABOUT_TITLE 15
+#define IDS_RUNNING_TITLE 16
+#define IDS_SAVE_TITLE 17
+#define IDS_EOPEN 18
+#define IDS_ERROR 19
+#define IDS_FILEDONE 20
+#define IDS_INFO 21
+#define IDS_EWRITE 22
+#define IDS_ANSI 23
+#define IDS_NUMBER 24
+#define IDS_LOWERBOUND 25
+#define IDS_UPPERBOUND 26
+#define IDS_LIMIT 27
+#define IDS_RUNNING 28
+#define IDS_PFMSG 29
+#define IDS_PEMSG 30
+#define IDS_PFINVALID 31
+#define IDS_PFINVALID_OUT 32
+#define IDS_PFPRIME 33
+#define IDS_PFRESULT 34
+#define IDS_PEINVALID 35
+#define IDS_PEINVALID_OUT 36
+#define IDS_OUT_TITLE 37
+#define IDS_EOPEN_OUT 38
+#define IDS_EWRITE_OUT 39
+#define IDS_RUNFILE 40
+#define IDS_PERESULT 41
+#define IDS_PEABORT 42
+#define IDS_EREGCL 43
+#define IDS_ECRTWND 44
+#define IDS_EALLOC 45
+#define IDS_ESCRBUF 46
+#define IDS_WLARGE 47
+#define IDS_ETHREAD 48
+#define IDS_ETHREAD_OUT 49
+
+#define IDS_JA_APPNAME 100
+#define IDS_JA_ABOUT 101
+#define IDS_JA_BUILD 105
+#define IDS_JA_COPYRIGHT 106
+#define IDS_JA_PFHELP 107
+#define IDS_JA_PEHELP 108
+#define IDS_JA_OK 109
+#define IDS_JA_ABORT 110
+#define IDS_JA_CLRHST 111
+#define IDS_JA_CFMQUIT 112
+#define IDS_JA_CFMQUIT_TITLE 113
+#define IDS_JA_HELP_TITLE 114
+#define IDS_JA_ABOUT_TITLE 115
+#define IDS_JA_RUNNING_TITLE 116
+#define IDS_JA_SAVE_TITLE 117
+#define IDS_JA_EOPEN 118
+#define IDS_JA_ERROR 119
+#define IDS_JA_FILEDONE 120
+#define IDS_JA_INFO 121
+#define IDS_JA_EWRITE 122
+#define IDS_JA_ANSI 123
+#define IDS_JA_NUMBER 124
+#define IDS_JA_LOWERBOUND 125
+#define IDS_JA_UPPERBOUND 126
+#define IDS_JA_LIMIT 127
+#define IDS_JA_RUNNING 128
+#define IDS_JA_PFMSG 129
+#define IDS_JA_PEMSG 130
+#define IDS_JA_PFINVALID 131
+#define IDS_JA_PFINVALID_OUT 132
+#define IDS_JA_PFPRIME 133
+#define IDS_JA_PFRESULT 134
+#define IDS_JA_PEINVALID 135
+#define IDS_JA_PEINVALID_OUT 136
+#define IDS_JA_OUT_TITLE 137
+#define IDS_JA_EOPEN_OUT 138
+#define IDS_JA_EWRITE_OUT 139
+#define IDS_JA_RUNFILE 140
+#define IDS_JA_PERESULT 141
+#define IDS_JA_PEABORT 142
+#define IDS_JA_EREGCL 143
+#define IDS_JA_ECRTWND 144
+#define IDS_JA_EALLOC 145
+#define IDS_JA_ESCRBUF 146
+#define IDS_JA_WLARGE 147
+#define IDS_JA_ETHREAD 148
+#define IDS_JA_ETHREAD_OUT 149
+
+// Exit codes for calculator threads
+#define IDE_SUCCESS 0
+#define IDE_INVALID 1
+#define IDE_ABORT 2
+#define IDE_CANCEL 3
+#define IDE_CANNOTOPENFILE 4
+#define IDE_CANNOTWRITEFILE 5
+
+// Max figure count for unsigned 64-bit integer (including a null terminator)
+#define MAX_INPUT_LENGTH 21
+
+// Output buffer size
+#define MAX_OUTPUT_BUFFER 65536
+
+// Standard buffer size
+#define MAX_BUFFER 1024
+
+#endif

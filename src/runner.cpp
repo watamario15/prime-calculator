@@ -1,84 +1,35 @@
 #include "runner.hpp"
 
+#include <limits.h>
+#ifndef LLONG_MAX
+#define LLONG_MAX MAXLONGLONG
+#endif
+
+#ifdef __MINGW32CE__  // CeGCC
+#define _wtoi64(text) wcstoll(text, NULL, 10)
+#endif
+
+#if defined UNDER_CE && __GNUC__ == 3  // Pocket GCC
+#define lstrcatW wcscat
+#define lstrlenW wcslen
+#else
+#include <cwchar>
+#endif
+
 #include "msg.hpp"
 #include "ui.hpp"
 
 namespace runner {
-ULONGLONG num[3];
+static LONGLONG num[3];
 HANDLE hThread;
 volatile bool isAborted = false;
 
-void begin() {
-#ifdef __BORLANDC__
-  HMODULE msvcrt = LoadLibraryW(L"msvcrt.dll");
-  if (!msvcrt) {
-    util::messageBox(app::hWnd, app::hInst, L"msvcrt.dll not found.", app::wcMes[IDS_ETHREAD],
-                     MB_OK | MB_ICONINFORMATION);
-    return;
-  }
-  wcstoull_t wcstoull = (wcstoull_t)(void *)GetProcAddress(msvcrt, "_wcstoui64");
-  if (!wcstoull) {
-    FreeLibrary(msvcrt);
-    util::messageBox(app::hWnd, app::hInst, L"_wcstoui64 not found in msvcrt.dll.", app::wcMes[IDS_ETHREAD],
-                     MB_OK | MB_ICONINFORMATION);
-    return;
-  }
-#endif
-  wchar_t wcTemp[MAX_INPUT_LENGTH];
-  SendMessageW(app::hEdi0, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);  // Gets input
-  errno = 0;
-  num[0] = wcstoull(wcTemp, NULL, 10);
-  bool isErange = (errno == ERANGE);
-  if (app::mode == app::MODE_PE) {
-    SendMessageW(app::hEdi1, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);
-    errno = 0;
-    num[1] = wcstoull(wcTemp, NULL, 10);
-    isErange = isErange || (errno == ERANGE);  // Records a wraparound with logical disjunction
-    SendMessageW(app::hEdi2, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);
-    errno = 0;
-    num[2] = wcstoull(wcTemp, NULL, 10);
-    isErange = isErange || (errno == ERANGE);
-  }
-#ifdef __BORLANDC__
-  FreeLibrary(msvcrt);
-#endif
-  if (isErange) {
-    util::messageBox(app::hWnd, app::hInst, app::wcMes[IDS_WLARGE], app::wcMes[IDS_ETHREAD],
-                     MB_OK | MB_ICONINFORMATION);
-    return;
-  }
-
-  // Starts the calculation thread
-  hThread =
-      myCreateThread(NULL, 0, app::mode == app::MODE_PF ? runner::primeFactor : runner::primeEnumerator, NULL, 0, NULL);
-  if (hThread) {
-    SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);  // Prevents to stress the system
-
-    // Disables things that are not available while calculating
-    EnableWindow(app::hBtnOK, FALSE);
-    SendMessageW(app::hEdi0, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
-    if (app::mode == app::MODE_PE) {
-      SendMessageW(app::hEdi1, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
-      SendMessageW(app::hEdi2, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
-    }
-    EnableWindow(app::hBtnAbort, TRUE);
-    EnableMenuItem(app::hMenu, 2, MF_BYPOSITION | MF_GRAYED);
-    DrawMenuBar(app::hWnd);
-    SetWindowTextW(app::hWnd, app::wcMes[IDS_RUNNING_TITLE]);
-    app::isRunning = true;
-    msg::redraw(app::hWnd);
-  } else {
-    util::messageBox(app::hWnd, app::hInst, app::wcMes[IDS_ETHREAD], app::wcMes[IDS_ERROR], MB_OK | MB_ICONWARNING);
-    ui::appendOutput(app::wcMes[IDS_ETHREAD_OUT]);
-  }
-}
-
-tret_t WINAPI primeFactor(void *lpParameter) {
+static tret_t WINAPI primeFactor(void *lpParameter) {
   UNREFERENCED_PARAMETER(lpParameter);
 
-  ULONGLONG N = num[0];  // Dividend (initialized with an input value)
-  ULONGLONG cnt = 0;     // Number of prime factors
-  ULONGLONG i = 2;       // Divisor (Candidate for a prime factor)
+  LONGLONG N = num[0];  // Dividend (initialized with an input value)
+  LONGLONG cnt = 0;     // Number of prime factors
+  LONGLONG i = 2;       // Divisor (Candidate for a prime factor)
   bool chk = false;
   wchar_t wcStr1[MAX_BUFFER] = L"", wcStr2[MAX_BUFFER] = L"";
 
@@ -91,39 +42,34 @@ tret_t WINAPI primeFactor(void *lpParameter) {
   // Prime factorization with the trial division algorithm
   while (true) {
     if (i == 2) {
-      if (N % 2 == 0 && N != 2) {  // Found a prime factor
-        chk = true;
-        goto after;
-      }
-
-      if (N / 2 < 2 || N == 2) {  // N is a prime number
+      if (N == 2) {  // N is a prime number
         chk = false;
         goto after;
       }
-
+      if (N % 2 == 0) {  // Found a prime factor
+        chk = true;
+        goto after;
+      }
       i = 3;
     }
-
     for (; i <= N && !isAborted; i += 2) {
       if (N % i == 0 && N != i) {  // Found a prime factor
         chk = true;
         break;
       }
-
       if (N / i < i || N == i) {  // N is a prime number
         chk = false;
         break;
       }
     }
-
     if (isAborted) break;
 
   after:
     if (chk) {                          // Found a prime factor
-      wsprintfW(wcStr2, L"%I64ux", i);  // Converts the found prime factor to a string and appends "x"
+      wsprintfW(wcStr2, L"%I64dx", i);  // Converts the found prime factor to a string and appends "x"
       lstrcatW(wcStr1, wcStr2);         // Appends to the result
     } else {                            // N is a prime number
-      wsprintfW(wcStr2, L"%I64u", N);   // Converts itself to a string
+      wsprintfW(wcStr2, L"%I64d", N);   // Converts itself to a string
       lstrcatW(wcStr1, wcStr2);         // Appends to the result
       break;
     }
@@ -140,7 +86,7 @@ tret_t WINAPI primeFactor(void *lpParameter) {
     return IDE_ABORT;
   }
 
-  wsprintfW(wcStr2, L"%s%I64u = %s", app::wcMes[IDS_PFRESULT], num[0], wcStr1);  // Constructs the result string
+  wsprintfW(wcStr2, L"%s%I64d = %s", app::wcMes[IDS_PFRESULT], num[0], wcStr1);  // Constructs the result string
   ui::appendOutput(wcStr2);
   SendMessageW(app::hEdiOut, EM_REPLACESEL, 0, (WPARAM)L"\r\n");
 
@@ -152,17 +98,17 @@ tret_t WINAPI primeFactor(void *lpParameter) {
   return IDE_SUCCESS;
 }
 
-tret_t WINAPI primeEnumerator(void *lpParameter) {
+static tret_t WINAPI primeEnumerator(void *lpParameter) {
   UNREFERENCED_PARAMETER(lpParameter);
 
-  if (num[1] == 0) num[1] = ULLONG_MAX;
-  if (num[2] == 0 || app::countOnly) num[2] = ULLONG_MAX;
+  if (num[1] == 0) num[1] = LLONG_MAX;
+  if (num[2] == 0 || app::countOnly) num[2] = LLONG_MAX;
   if (num[0] > num[1]) {
     PostMessageW(app::hWnd, WM_APP_THREADEND, 0, 0);
     return IDE_INVALID;
   }
 
-  ULONGLONG lowerBound = num[0], upperBound = num[1], maxCount = num[2];
+  LONGLONG lowerBound = num[0], upperBound = num[1], maxCount = num[2];
   HANDLE hFile = NULL;
 
   // Prepares for text file output
@@ -208,7 +154,7 @@ tret_t WINAPI primeEnumerator(void *lpParameter) {
     ui::appendOutput(app::wcMes[IDS_RUNFILE]);
   }
 
-  ULONGLONG cnt = 0;  // Number of prime numbers
+  LONGLONG cnt = 0;  // Number of prime numbers
 
   // Adjusts inputs (handles the cases of blank or 0)
   if (lowerBound <= 2 && upperBound >= 2) {
@@ -227,21 +173,19 @@ tret_t WINAPI primeEnumerator(void *lpParameter) {
   wchar_t wcStr1[MAX_BUFFER], wcStr2[MAX_BUFFER];
 
   // Prime enumeration with the trial division algorithm
-  for (ULONGLONG i = lowerBound; i <= upperBound && cnt < maxCount; i += 2) {  // Prime number candidate
-    for (ULONGLONG j = 3; j <= i && !isAborted; j += 2) {                      // Prime factor candidate
-      if (i % j == 0 && i != j) break;                                         // Not a prime number
-      if (i / j < j || i == j) {                                               // Prime number
-        if (!app::countOnly) {                                                 // Does not output in count only mode
-          if (cnt == 0) {                                                      // First output
-            wsprintfW(wcStr1, L"%I64u", i);                                    // For edit box output
-            if (app::useFile) wsprintfA(mbStr, "%I64u", i);                    // For file output
-          } else {
-            wsprintfW(wcStr1, L", %I64u", i);
-            if (app::useFile) wsprintfA(mbStr, ", %I64u", i);
-          }
-
+  LONGLONG i, j;
+  for (i = lowerBound; i <= upperBound && cnt < maxCount; i += 2) {  // Prime number candidate
+    for (j = 3; j <= i && !isAborted; j += 2) {                      // Prime factor candidate
+      if (i % j == 0 && i != j) break;                               // Not a prime number
+      if (i / j < j || i == j) {                                     // Prime number
+        if (!app::countOnly) {                                       // Does not output in count only mode
+          wsprintfW(wcStr1, cnt ? L", %I64d" : L"%I64d", i);
           if (app::useFile) {
-            WriteFile(hFile, mbStr, lstrlenA(mbStr) * sizeof(char), &dwTemp, NULL);
+            mbLen = WideCharToMultiByte(app::charset == IDM_OPT_CHARSET_SJIS ? 932 : 65001, 0, wcStr1, lstrlenW(wcStr1),
+                                        NULL, 0, NULL, NULL);
+            WideCharToMultiByte(app::charset == IDM_OPT_CHARSET_SJIS ? 932 : 65001, 0, wcStr1, lstrlenW(wcStr1), mbStr,
+                                mbLen, NULL, NULL);
+            WriteFile(hFile, mbStr, mbLen, &dwTemp, NULL);
           } else {
             ui::appendOutput(wcStr1);
           }
@@ -250,7 +194,7 @@ tret_t WINAPI primeEnumerator(void *lpParameter) {
         break;
       }
     }
-    if (isAborted || i == ULLONG_MAX) break;
+    if (isAborted || i == LLONG_MAX) break;
   }
 
   if (!app::countOnly && !app::useFile) {
@@ -284,5 +228,45 @@ tret_t WINAPI primeEnumerator(void *lpParameter) {
 
   PostMessageW(app::hWnd, WM_APP_THREADEND, 0, 0);
   return IDE_SUCCESS;
+}
+
+void begin() {
+  wchar_t wcTemp[MAX_INPUT_LENGTH];
+  SendMessageW(app::hEdi0, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);  // Gets input
+  num[0] = _wtoi64(wcTemp);
+  if (app::mode == app::MODE_PE) {
+    SendMessageW(app::hEdi1, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);
+    num[1] = _wtoi64(wcTemp);
+    SendMessageW(app::hEdi2, WM_GETTEXT, MAX_INPUT_LENGTH, (LPARAM)wcTemp);
+    num[2] = _wtoi64(wcTemp);
+  }
+
+  // Starts the calculation thread
+  hThread =
+      myCreateThread(NULL, 0, app::mode == app::MODE_PF ? runner::primeFactor : runner::primeEnumerator, NULL, 0, NULL);
+  if (hThread) {
+    SetThreadPriority(hThread, THREAD_PRIORITY_BELOW_NORMAL);  // Prevents system freeze
+
+    // Disables things that are not available while calculating
+    EnableWindow(app::hBtnOK, FALSE);
+    SendMessageW(app::hEdi0, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
+    if (app::mode == app::MODE_PE) {
+      SendMessageW(app::hEdi1, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
+      SendMessageW(app::hEdi2, EM_SETREADONLY, (WPARAM)TRUE, (LPARAM)NULL);
+    }
+    EnableWindow(app::hBtnAbort, TRUE);
+    EnableMenuItem(app::hMenu, 2, MF_BYPOSITION | MF_GRAYED);
+#ifdef UNDER_CE
+    CommandBar_DrawMenuBar(app::hCmdBar, 1);
+#else
+    DrawMenuBar(app::hWnd);
+#endif
+    SetWindowTextW(app::hWnd, app::wcMes[IDS_RUNNING_TITLE]);
+    app::isRunning = true;
+    msg::redraw(app::hWnd);
+  } else {
+    util::messageBox(app::hWnd, app::hInst, app::wcMes[IDS_ETHREAD], app::wcMes[IDS_ERROR], MB_OK | MB_ICONWARNING);
+    ui::appendOutput(app::wcMes[IDS_ETHREAD_OUT]);
+  }
 }
 }  // namespace runner

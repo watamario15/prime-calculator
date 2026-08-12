@@ -13,6 +13,9 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+#ifndef STRICT
+#define STRICT
+#endif
 #include <windows.h>
 
 #ifdef UNDER_CE
@@ -21,9 +24,6 @@
 #else
 #include <process.h>
 #endif
-
-#include <errno.h>
-#include <wchar.h>
 
 #include "resource.h"
 #include "util.hpp"
@@ -97,13 +97,18 @@ enum mode_t {
   MODE_PE   // Prime enumeration
 };
 
-extern HWND hWnd, hBtnOK, hBtnAbort, hBtnClear, hEdi0, hEdi1, hEdi2, hEdiOut, hFocused;
+extern HWND hWnd, hBtnOK, hBtnAbort, hBtnClear, hBtn0, hBtn1, hBtn2, hBtn3, hBtn4, hBtn5, hBtn6, hBtn7, hBtn8, hBtn9,
+    hBtnCE, hBtnBS, hEdi0, hEdi1, hEdi2, hEdiOut, hFocused;
 extern HINSTANCE hInst;
 extern HMENU hMenu;
 extern enum mode_t mode;
 extern bool useFile, countOnly, isRunning;
 extern int charset;
+extern unsigned short langid;
 extern wchar_t wcMes[SIZE_OF_STRING_TABLE][MAX_BUFFER];  // String Table receiver
+#ifdef UNDER_CE
+extern HWND hCmdBar;
+#endif
 }  // namespace app
 
 #endif

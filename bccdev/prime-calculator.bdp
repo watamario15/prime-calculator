@@ -9,7 +9,7 @@ Filename5=main.cpp,1,prime-calculator.bdp,1,..\src\main.cpp
 Filename6=util.cpp,1,prime-calculator.bdp,1,..\src\util.cpp
 
 [Compile]
-ResourceName=..\src\resource-bcc.rc
+ResourceName=..\src\resource-old.rc
 RunParam=
 Count=2
 Current=2

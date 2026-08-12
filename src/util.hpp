@@ -1,8 +1,6 @@
 #ifndef UTIL_HPP_
 #define UTIL_HPP_
 
-#include <string>
-
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif

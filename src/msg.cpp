@@ -3,12 +3,16 @@
 #include "runner.hpp"
 #include "wproc.hpp"
 
+#if defined UNDER_CE && __GNUC__ == 3  // Pocket GCC
+#define lstrcpyW wcscpy
+#endif
+
 namespace msg {
 static HDC hMemDC;  // Handle of a memory device context for double buffering
 static HFONT hFmes = NULL, hFbtn = NULL, hFedi = NULL;
-static HBRUSH hBshSys = GetSysColorBrush(COLOR_BTNFACE);
+static HBRUSH hBshSys, BGDark;
 static HPEN hPenSys;
-static int buttonX, buttonY;
+static int buttonX, buttonY, CmdBar_Height = 0;
 static struct wproc::editorprops_t edit0Props, edit1Props, edit2Props;
 
 void onActivate(HWND hWnd, unsigned state, HWND hWndActDeact, BOOL fMinimized) {
@@ -21,9 +25,28 @@ void onActivate(HWND hWnd, unsigned state, HWND hWndActDeact, BOOL fMinimized) {
 }
 
 BOOL onCreate(HWND hWnd, CREATESTRUCTW *lpCreateStruct) {
-  // Initialize menus
+#ifdef UNDER_CE
+  InitCommonControls();
+  app::hCmdBar = CommandBar_Create(app::hInst, hWnd, 1);
+  if (app::langid == 0x0411) {  // Japanese platforms
+    wchar_t tmp[] = L"ResMenu_JA";
+    CommandBar_InsertMenubarEx(app::hCmdBar, app::hInst, tmp, 0);
+  } else {
+    wchar_t tmp[] = L"ResMenu_EN";
+    CommandBar_InsertMenubarEx(app::hCmdBar, app::hInst, tmp, 0);
+  }
+  CommandBar_Show(app::hCmdBar, TRUE);
+  CmdBar_Height = CommandBar_Height(app::hCmdBar);
+  app::hMenu = CommandBar_GetMenu(app::hCmdBar, 0);
+#else
+  if (app::langid == 0x0411) {  // Japanese platforms
+    app::hMenu = LoadMenuW(app::hInst, L"ResMenu_JA");
+  } else {
+    app::hMenu = LoadMenuW(app::hInst, L"ResMenu_EN");
+  }
   SetMenu(hWnd, app::hMenu);
-  if (GetUserDefaultUILanguage() == 0x0411) {  // Japanese platforms
+#endif
+  if (app::langid == 0x0411) {  // Japanese platforms
     CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_JA, MF_BYCOMMAND);
   } else {
     CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_EN, MF_BYCOMMAND);
@@ -35,7 +58,9 @@ BOOL onCreate(HWND hWnd, CREATESTRUCTW *lpCreateStruct) {
   EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);  // Same here
 
   hMemDC = CreateCompatibleDC(NULL);
+  hBshSys = GetSysColorBrush(COLOR_BTNFACE);
   hPenSys = CreatePen(PS_SOLID, 1, GetSysColor(COLOR_BTNFACE));
+  BGDark = CreateSolidBrush(0x3f3936);
 
   // Using a dummy position and size here as we will set the actual value at `onSize`.
   // Input box
@@ -68,15 +93,49 @@ BOOL onCreate(HWND hWnd, CREATESTRUCTW *lpCreateStruct) {
   // OK button
   app::hBtnOK = CreateWindowExW(0, L"BUTTON", app::wcMes[IDS_OK], WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0,
                                 hWnd, (HMENU)IDC_BUTTON_OK, app::hInst, NULL);
-
   // Abort button
   app::hBtnAbort =
       CreateWindowExW(0, L"BUTTON", app::wcMes[IDS_ABORT], WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_DISABLED, 0, 0, 0,
                       0, hWnd, (HMENU)IDC_BUTTON_ABORT, app::hInst, NULL);
-
   // Clear History button
   app::hBtnClear = CreateWindowExW(0, L"BUTTON", app::wcMes[IDS_CLRHST], WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0,
                                    0, hWnd, (HMENU)IDC_BUTTON_CLEAR, app::hInst, NULL);
+  // 0
+  app::hBtn0 = CreateWindowExW(0, L"BUTTON", L"0", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_0, app::hInst, NULL);
+  // 1
+  app::hBtn1 = CreateWindowExW(0, L"BUTTON", L"1", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_1, app::hInst, NULL);
+  // 2
+  app::hBtn2 = CreateWindowExW(0, L"BUTTON", L"2", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_2, app::hInst, NULL);
+  // 3
+  app::hBtn3 = CreateWindowExW(0, L"BUTTON", L"3", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_3, app::hInst, NULL);
+  // 4
+  app::hBtn4 = CreateWindowExW(0, L"BUTTON", L"4", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_4, app::hInst, NULL);
+  // 5
+  app::hBtn5 = CreateWindowExW(0, L"BUTTON", L"5", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_5, app::hInst, NULL);
+  // 6
+  app::hBtn6 = CreateWindowExW(0, L"BUTTON", L"6", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_6, app::hInst, NULL);
+  // 7
+  app::hBtn7 = CreateWindowExW(0, L"BUTTON", L"7", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_7, app::hInst, NULL);
+  // 8
+  app::hBtn8 = CreateWindowExW(0, L"BUTTON", L"8", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_8, app::hInst, NULL);
+  // 9
+  app::hBtn9 = CreateWindowExW(0, L"BUTTON", L"9", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hWnd,
+                               (HMENU)IDC_BUTTON_9, app::hInst, NULL);
+  // Back Space
+  app::hBtnBS = CreateWindowExW(0, L"BUTTON", app::wcMes[IDS_BS], WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0,
+                                hWnd, (HMENU)IDC_BUTTON_BS, app::hInst, NULL);
+  // Clear Entry
+  app::hBtnCE = CreateWindowExW(0, L"BUTTON", app::wcMes[IDS_CE], WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0,
+                                hWnd, (HMENU)IDC_BUTTON_CE, app::hInst, NULL);
 
 #ifndef UNDER_CE
   // Obtains the "system DPI" value. We use this as the fallback value on older Windows versions and to calculate the
@@ -119,7 +178,24 @@ BOOL onCreate(HWND hWnd, CREATESTRUCTW *lpCreateStruct) {
 
 void onClose(HWND hWnd) {
   DeleteObject(hPenSys);
+  DeleteObject(BGDark);
   DestroyWindow(hWnd);
+}
+
+HBRUSH onCtlColor(HWND hWnd, HDC hdc, HWND hWndChild, int type) {
+  UNREFERENCED_PARAMETER(hWnd);
+  UNREFERENCED_PARAMETER(hWndChild);
+  UNREFERENCED_PARAMETER(type);
+
+  SetTextColor(hdc, 0x00ff00);
+  SetBkColor(hdc, 0x3f3936);
+  return BGDark;
+}
+
+void onDestroy(HWND hWnd) {
+  UNREFERENCED_PARAMETER(hWnd);
+
+  PostQuitMessage(0);
 }
 
 void onSize(HWND hWnd, unsigned state, int cx, int cy) {
@@ -152,15 +228,16 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   rLogfont.lfCharSet = SHIFTJIS_CHARSET;
   rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
   rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-  rLogfont.lfQuality = DEFAULT_QUALITY;
   rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
 #ifdef UNDER_CE
   // Sets a pre-installed font on Windows CE, as it doesn't have "MS Shell Dlg".
   lstrcpyW(rLogfont.lfFaceName, L"Tahoma");
+  rLogfont.lfQuality = ANTIALIASED_QUALITY;
 #else
   // Sets a logical font face name for localization.
   // It maps to a default shell font associated with the current culture/locale.
   lstrcpyW(rLogfont.lfFaceName, L"MS Shell Dlg");
+  rLogfont.lfQuality = DEFAULT_QUALITY;
 #endif
   if (hFmes) DeleteObject(hFmes);          // Deletes the previous font
   hFmes = CreateFontIndirectW(&rLogfont);  // Creates the new font
@@ -181,20 +258,21 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   rLogfont.lfCharSet = SHIFTJIS_CHARSET;
   rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
   rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-  rLogfont.lfQuality = DEFAULT_QUALITY;
   rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
 #ifdef UNDER_CE
   // Sets a pre-installed font on Windows CE, as it doesn't have "MS Shell Dlg".
   lstrcpyW(rLogfont.lfFaceName, L"Tahoma");
+  rLogfont.lfQuality = ANTIALIASED_QUALITY;
 #else
   // Sets a logical font face name for localization.
   // It maps to a default shell font associated with the current culture/locale.
   lstrcpyW(rLogfont.lfFaceName, L"MS Shell Dlg");
+  rLogfont.lfQuality = DEFAULT_QUALITY;
 #endif
   if (hFbtn) DeleteObject(hFbtn);
   hFbtn = CreateFontIndirectW(&rLogfont);
 
-  // Font for edit boxes
+  // Font for the output box
   if (16 * scrx / 700 < 16 * scry / 400) {
     rLogfont.lfHeight = 16 * scrx / 700;
   } else {
@@ -211,15 +289,16 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   rLogfont.lfCharSet = SHIFTJIS_CHARSET;
   rLogfont.lfOutPrecision = OUT_DEFAULT_PRECIS;
   rLogfont.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-  rLogfont.lfQuality = DEFAULT_QUALITY;
   rLogfont.lfPitchAndFamily = VARIABLE_PITCH | FF_SWISS;
 #ifdef UNDER_CE
   // Sets a pre-installed font on Windows CE, as it doesn't have "MS Shell Dlg".
   lstrcpyW(rLogfont.lfFaceName, L"Tahoma");
+  rLogfont.lfQuality = ANTIALIASED_QUALITY;
 #else
   // Sets a logical font face name for localization.
   // It maps to a default shell font associated with the current culture/locale.
   lstrcpyW(rLogfont.lfFaceName, L"MS Shell Dlg");
+  rLogfont.lfQuality = DEFAULT_QUALITY;
 #endif
   if (hFedi) DeleteObject(hFedi);
   hFedi = CreateFontIndirectW(&rLogfont);
@@ -228,6 +307,18 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   SendMessageW(app::hBtnOK, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
   SendMessageW(app::hBtnAbort, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
   SendMessageW(app::hBtnClear, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn1, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn2, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn3, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn4, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn5, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn6, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn7, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn8, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtn9, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtnBS, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
+  SendMessageW(app::hBtnCE, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
   SendMessageW(app::hEdi0, WM_SETFONT, (WPARAM)hFbtn, MAKELPARAM(FALSE, 0));
   SendMessageW(app::hEdiOut, WM_SETFONT, (WPARAM)hFedi, MAKELPARAM(FALSE, 0));
   if (app::mode == app::MODE_PE) {
@@ -236,22 +327,52 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   }
 
   // Move and resize controls
+#ifdef UNDER_CE
+  MoveWindow(app::hCmdBar, 0, 0, 0, 0, TRUE);
+#endif
   buttonX = 96 * scrx / 700;
   buttonY = 32 * scry / 400;
+  int nbX = scrx / 20, nbY = CmdBar_Height + (app::mode == app::MODE_PF ? scry * 9 / 40 : scry * 3 / 10),
+      nbW = scrx * 9 / 120;
+  MoveWindow(app::hBtn0, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn1, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn2, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn3, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn4, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn5, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn6, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn7, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn8, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtn9, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtnBS, nbX, nbY, nbW, buttonY, TRUE);
+  nbX += nbW;
+  MoveWindow(app::hBtnCE, nbX, nbY, nbW, buttonY, TRUE);
   if (app::mode == app::MODE_PF) {
-    MoveWindow(app::hEdi0, buttonX, 0, buttonX * 3, buttonY, TRUE);
-    MoveWindow(app::hBtnOK, buttonX * 4, 0, buttonX * 2 / 3, buttonY, TRUE);
-    MoveWindow(app::hBtnAbort, buttonX * 14 / 3, 0, buttonX * 2 / 3, buttonY, TRUE);
-    MoveWindow(app::hBtnClear, buttonX * 16 / 3, 0, buttonX * 5 / 3, buttonY, TRUE);
-    MoveWindow(app::hEdiOut, scrx / 20, scry * 9 / 40, scrx * 9 / 10, scry * 29 / 40, TRUE);
+    MoveWindow(app::hEdi0, buttonX, CmdBar_Height, buttonX * 3, buttonY, TRUE);
+    MoveWindow(app::hBtnOK, buttonX * 4, CmdBar_Height, buttonX * 2 / 3, buttonY, TRUE);
+    MoveWindow(app::hBtnAbort, buttonX * 14 / 3, CmdBar_Height, buttonX * 2 / 3, buttonY, TRUE);
+    MoveWindow(app::hBtnClear, buttonX * 16 / 3, CmdBar_Height, buttonX * 5 / 3, buttonY, TRUE);
+    MoveWindow(app::hEdiOut, scrx / 20, CmdBar_Height + scry * 9 / 40 + buttonY, scrx * 9 / 10,
+               scry * 29 / 40 - buttonY - CmdBar_Height, TRUE);
   } else {
-    MoveWindow(app::hEdi0, buttonX, 0, buttonX * 5 / 2, buttonY, TRUE);
-    MoveWindow(app::hEdi1, buttonX * 9 / 2, 0, buttonX * 5 / 2, buttonY, TRUE);
-    MoveWindow(app::hEdi2, buttonX, buttonY, buttonX * 2, buttonY, TRUE);
-    MoveWindow(app::hBtnOK, buttonX * 3, buttonY, buttonX * 2 / 3, buttonY, TRUE);
-    MoveWindow(app::hBtnAbort, buttonX * 11 / 3, buttonY, buttonX * 2 / 3, buttonY, TRUE);
-    MoveWindow(app::hBtnClear, buttonX * 13 / 3, buttonY, buttonX * 5 / 3, buttonY, TRUE);
-    MoveWindow(app::hEdiOut, scrx / 20, scry * 3 / 10, scrx * 9 / 10, scry * 13 / 20, TRUE);
+    MoveWindow(app::hEdi0, buttonX, CmdBar_Height, buttonX * 5 / 2, buttonY, TRUE);
+    MoveWindow(app::hEdi1, buttonX * 9 / 2, CmdBar_Height, buttonX * 5 / 2, buttonY, TRUE);
+    MoveWindow(app::hEdi2, buttonX, CmdBar_Height + buttonY, buttonX * 2, buttonY, TRUE);
+    MoveWindow(app::hBtnOK, buttonX * 3, CmdBar_Height + buttonY, buttonX * 2 / 3, buttonY, TRUE);
+    MoveWindow(app::hBtnAbort, buttonX * 11 / 3, CmdBar_Height + buttonY, buttonX * 2 / 3, buttonY, TRUE);
+    MoveWindow(app::hBtnClear, buttonX * 13 / 3, CmdBar_Height + buttonY, buttonX * 5 / 3, buttonY, TRUE);
+    MoveWindow(app::hEdiOut, scrx / 20, CmdBar_Height + scry * 3 / 10 + buttonY, scrx * 9 / 10,
+               scry * 13 / 20 - buttonY - CmdBar_Height, TRUE);
   }
 
   if (hBitmap) DeleteObject(hBitmap);  // Deletes the previous bitmap
@@ -288,6 +409,8 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
   } else {
     SetFocus(app::hFocused);
   }
+  EnableMenuItem(app::hMenu, IDM_EDIT_CUT, MF_BYCOMMAND | (app::hFocused == app::hEdiOut ? MF_GRAYED : MF_ENABLED));
+  EnableMenuItem(app::hMenu, IDM_EDIT_PASTE, MF_BYCOMMAND | (app::hFocused == app::hEdiOut ? MF_GRAYED : MF_ENABLED));
 
   switch (id) {
     case IDC_BUTTON_OK:
@@ -399,35 +522,58 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
       SendMessageW(app::hFocused, EM_SETSEL, 0, SendMessageW(app::hFocused, WM_GETTEXTLENGTH, 0, 0));
       break;
 
+    case IDC_BUTTON_BS: {
+      if (app::hFocused == app::hEdiOut) break;
+      LRESULT editlen = SendMessageW(app::hFocused, EM_GETSEL, 0, 0);
+      if (LOWORD(editlen) == HIWORD(editlen)) {
+        SendMessageW(app::hFocused, EM_SETSEL, LOWORD(editlen) - 1, LOWORD(editlen));
+        SendMessageW(app::hFocused, EM_REPLACESEL, 0, (WPARAM)L"");
+      } else {
+        SendMessageW(app::hFocused, EM_REPLACESEL, 0, (WPARAM)L"");
+      }
+      break;
+    }
+
+    case IDC_BUTTON_CE: {
+      if (app::hFocused == app::hEdiOut) break;
+      LRESULT editlen = SendMessageW(app::hFocused, WM_GETTEXTLENGTH, 0, 0);
+      SendMessageW(app::hFocused, EM_SETSEL, 0, editlen);
+      SendMessageW(app::hFocused, EM_REPLACESEL, 0, (WPARAM)L"");
+      break;
+    }
+
     case IDM_OPT_PF: {  // Switch to Prime Factorization
       if (app::mode == app::MODE_PF) break;
+      app::mode = app::MODE_PF;
 
       CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PF, MF_BYCOMMAND);
       EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_GRAYED);
       EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
-
+      EnableMenuItem(app::hMenu, IDM_EDIT_CUT, MF_BYCOMMAND | MF_ENABLED);
+      EnableMenuItem(app::hMenu, IDM_EDIT_PASTE, MF_BYCOMMAND | MF_ENABLED);
       SetFocus(app::hEdi0);
 
       DestroyWindow(app::hEdi1);  // Remove unnecessary edit boxes
       DestroyWindow(app::hEdi2);
 
-      edit0Props.hNextWnd = NULL;
+      edit0Props.hPrevWnd = app::hEdi0;
+      edit0Props.hNextWnd = app::hEdi0;
       edit0Props.runOnEnter = true;
 
-      app::mode = app::MODE_PF;
-
-      RECT rect;
-      GetClientRect(hWnd, &rect);
-
-      PostMessageW(hWnd, WM_SIZE, 0, MAKEWPARAM(rect.right, rect.bottom));  // Applies the new layout
+      onSize(hWnd);
       break;
     }
 
     case IDM_OPT_PE: {  // Switch to Enumerate Prime Numbers
       if (app::mode == app::MODE_PE) break;
+      app::mode = app::MODE_PE;
+
       CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PE, MF_BYCOMMAND);
       EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_ENABLED);
       EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
+      EnableMenuItem(app::hMenu, IDM_EDIT_CUT, MF_BYCOMMAND | MF_ENABLED);
+      EnableMenuItem(app::hMenu, IDM_EDIT_PASTE, MF_BYCOMMAND | MF_ENABLED);
+      SetFocus(app::hEdi0);
 
       app::hEdi1 = CreateWindowExW(  // Input box
           0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_LEFT | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL, 0, 0, 0, 0, hWnd,
@@ -463,17 +609,12 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
       mySetWindowLongW(app::hEdi1, GWL_USERDATA, (LONG_PTR)&edit1Props);
       mySetWindowLongW(app::hEdi2, GWL_USERDATA, (LONG_PTR)&edit2Props);
 
-      app::mode = app::MODE_PE;
-
-      RECT rect;
-      GetClientRect(hWnd, &rect);
-
-      PostMessageW(hWnd, WM_SIZE, 0, MAKEWPARAM(rect.right, rect.bottom));  // Applies the new layout
+      onSize(hWnd);
       break;
     }
 
     case IDM_OPT_CNTONLY:
-      if (GetMenuState(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND) & MF_CHECKED) {  // Unchecks if checked
+      if (app::countOnly) {  // Unchecks if checked
         CheckMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_UNCHECKED);
         EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_ENABLED);
         SendMessageW(app::hEdi2, EM_SETREADONLY, (WPARAM)FALSE, (LPARAM)NULL);
@@ -487,98 +628,102 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
       break;
 
     case IDM_OPT_OUTFILE:
-      if (GetMenuState(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND) & MF_CHECKED) {  // Unchecks if checked
-        CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_UNCHECKED);
+      if (app::useFile) {  // Unchecks if checked
         app::useFile = false;
+        CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_UNCHECKED);
       } else {  // Checks if unchecked
-        CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
         app::useFile = true;
+        CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
       }
       break;
 
     case IDM_OPT_LANG_JA: {
-      // Backs up the menu state
-      unsigned menu[5];
-      menu[0] = GetMenuState(app::hMenu, IDM_OPT_PF, MF_BYCOMMAND);
-      menu[1] = GetMenuState(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND);
-      menu[2] = GetMenuState(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND);
-      menu[3] = GetMenuState(app::hMenu, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
+      if (app::langid == 0x0411) break;
+      app::langid = 0x0411;
 
+#ifdef UNDER_CE
+      CommandBar_Destroy(app::hCmdBar);
+      app::hCmdBar = CommandBar_Create(app::hInst, hWnd, 1);
+      wchar_t tmp[] = L"ResMenu_JA";
+      CommandBar_InsertMenubarEx(app::hCmdBar, app::hInst, tmp, 0);
+      CommandBar_Show(app::hCmdBar, TRUE);
+      CmdBar_Height = CommandBar_Height(app::hCmdBar);
+      app::hMenu = CommandBar_GetMenu(app::hCmdBar, 0);
+#else
       DestroyMenu(app::hMenu);
       app::hMenu = LoadMenuW(app::hInst, L"ResMenu_JA");
       SetMenu(hWnd, app::hMenu);
-
-      CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_JA, MF_BYCOMMAND);
+#endif
 
       // Restores checkboxes and radio buttons
-      if (menu[0] & MF_CHECKED) {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PF, MF_BYCOMMAND);
-      } else {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PE, MF_BYCOMMAND);
-      }
-      if (menu[1] & MF_CHECKED) CheckMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_CHECKED);
-      if (menu[2] & MF_CHECKED) CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
-      if (menu[3] & MF_CHECKED) {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
-      } else {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_SJIS, MF_BYCOMMAND);
-      }
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, app::mode == app::MODE_PF ? IDM_OPT_PF : IDM_OPT_PE,
+                         MF_BYCOMMAND);
+      if (app::countOnly) CheckMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_CHECKED);
+      if (app::useFile) CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_JA, MF_BYCOMMAND);
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, app::charset, MF_BYCOMMAND);
 
       // Restores the enablement statuses
-      if (menu[1] & MF_GRAYED) EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_GRAYED);
-      if (menu[2] & MF_GRAYED) EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
-
-      for (int i = 0; i < SIZE_OF_STRING_TABLE; i++) {  // Loads the Japanese String Table
-        LoadStringW(app::hInst, IDS_JA + i, app::wcMes[i], sizeof(app::wcMes[0]) / sizeof(app::wcMes[0][0]));
+      if (app::mode == app::MODE_PF) EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_GRAYED);
+      if (app::mode == app::MODE_PF || app::countOnly) {
+        EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
       }
 
+      int i;
+      for (i = 0; i < SIZE_OF_STRING_TABLE; i++) {  // Loads the Japanese String Table
+        LoadStringW(app::hInst, IDS_JA + i, app::wcMes[i], sizeof(app::wcMes[0]) / sizeof(app::wcMes[0][0]));
+      }
       SetWindowTextW(app::hBtnOK, app::wcMes[IDS_OK]);
       SetWindowTextW(app::hBtnAbort, app::wcMes[IDS_ABORT]);
       SetWindowTextW(app::hBtnClear, app::wcMes[IDS_CLRHST]);
+      SetWindowTextW(app::hBtnBS, app::wcMes[IDS_BS]);
+      SetWindowTextW(app::hBtnCE, app::wcMes[IDS_CE]);
       SetWindowTextW(hWnd, app::wcMes[IDS_APPNAME]);
       redraw(hWnd);
       break;
     }
 
     case IDM_OPT_LANG_EN: {
-      // Backs up the menu state
-      unsigned menu[5];
-      menu[0] = GetMenuState(app::hMenu, IDM_OPT_PF, MF_BYCOMMAND);
-      menu[1] = GetMenuState(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND);
-      menu[2] = GetMenuState(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND);
-      menu[3] = GetMenuState(app::hMenu, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
+      if (app::langid == 0x0409) break;
+      app::langid = 0x0409;
 
+#ifdef UNDER_CE
+      CommandBar_Destroy(app::hCmdBar);
+      app::hCmdBar = CommandBar_Create(app::hInst, hWnd, 1);
+      wchar_t tmp[] = L"ResMenu_EN";
+      CommandBar_InsertMenubarEx(app::hCmdBar, app::hInst, tmp, 0);
+      CommandBar_Show(app::hCmdBar, TRUE);
+      CmdBar_Height = CommandBar_Height(app::hCmdBar);
+      app::hMenu = CommandBar_GetMenu(app::hCmdBar, 0);
+#else
       DestroyMenu(app::hMenu);
       app::hMenu = LoadMenuW(app::hInst, L"ResMenu_EN");
       SetMenu(hWnd, app::hMenu);
-
-      CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_EN, MF_BYCOMMAND);
+#endif
 
       // Restores checkboxes and radio buttons
-      if (menu[0] & MF_CHECKED) {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PF, MF_BYCOMMAND);
-      } else {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, IDM_OPT_PE, MF_BYCOMMAND);
-      }
-      if (menu[1] & MF_CHECKED) CheckMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_CHECKED);
-      if (menu[2] & MF_CHECKED) CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
-      if (menu[3] & MF_CHECKED) {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
-      } else {
-        CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_SJIS, MF_BYCOMMAND);
-      }
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_PF, IDM_OPT_PE, app::mode == app::MODE_PF ? IDM_OPT_PF : IDM_OPT_PE,
+                         MF_BYCOMMAND);
+      if (app::countOnly) CheckMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_CHECKED);
+      if (app::useFile) CheckMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_CHECKED);
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_LANG_JA, IDM_OPT_LANG_EN, IDM_OPT_LANG_EN, MF_BYCOMMAND);
+      CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, app::charset, MF_BYCOMMAND);
 
       // Restores the enablement statuses
-      if (menu[1] & MF_GRAYED) EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_GRAYED);
-      if (menu[2] & MF_GRAYED) EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
-
-      for (int i = 0; i < SIZE_OF_STRING_TABLE; i++) {  // Loads the English String Table
-        LoadStringW(app::hInst, IDS_EN + i, app::wcMes[i], sizeof(app::wcMes[0]) / sizeof(app::wcMes[0][0]));
+      if (app::mode == app::MODE_PF) EnableMenuItem(app::hMenu, IDM_OPT_CNTONLY, MF_BYCOMMAND | MF_GRAYED);
+      if (app::mode == app::MODE_PF || app::countOnly) {
+        EnableMenuItem(app::hMenu, IDM_OPT_OUTFILE, MF_BYCOMMAND | MF_GRAYED);
       }
 
+      int i;
+      for (i = 0; i < SIZE_OF_STRING_TABLE; i++) {  // Loads the English String Table
+        LoadStringW(app::hInst, IDS_EN + i, app::wcMes[i], sizeof(app::wcMes[0]) / sizeof(app::wcMes[0][0]));
+      }
       SetWindowTextW(app::hBtnOK, app::wcMes[IDS_OK]);
       SetWindowTextW(app::hBtnAbort, app::wcMes[IDS_ABORT]);
       SetWindowTextW(app::hBtnClear, app::wcMes[IDS_CLRHST]);
+      SetWindowTextW(app::hBtnBS, app::wcMes[IDS_BS]);
+      SetWindowTextW(app::hBtnCE, app::wcMes[IDS_CE]);
       SetWindowTextW(hWnd, app::wcMes[IDS_APPNAME]);
       redraw(hWnd);
       break;
@@ -586,16 +731,16 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
 
     case IDM_OPT_CHARSET_UTF8:
       if (app::charset == IDM_OPT_CHARSET_UTF8) break;
+      app::charset = IDM_OPT_CHARSET_UTF8;
 
       CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_UTF8, MF_BYCOMMAND);
-      app::charset = IDM_OPT_CHARSET_UTF8;
       break;
 
     case IDM_OPT_CHARSET_SJIS:
       if (app::charset == IDM_OPT_CHARSET_SJIS) break;
+      app::charset = IDM_OPT_CHARSET_SJIS;
 
       CheckMenuRadioItem(app::hMenu, IDM_OPT_CHARSET_UTF8, IDM_OPT_CHARSET_SJIS, IDM_OPT_CHARSET_SJIS, MF_BYCOMMAND);
-      app::charset = IDM_OPT_CHARSET_SJIS;
       break;
 
     case IDM_HELP_HOWTOUSE:
@@ -605,11 +750,16 @@ void onCommand(HWND hWnd, int id, HWND hWndCtl, unsigned codeNotify) {
 
     case IDM_HELP_ABOUT: {
       wchar_t wcTemp[MAX_BUFFER];
-      wsprintfW(wcTemp, L"%s\n\n%s" __DATE__ L" " __TIME__ L"\n\n%s", app::wcMes[IDS_ABOUT], app::wcMes[IDS_BUILD],
-                app::wcMes[IDS_COPYRIGHT]);
+      wsprintfW(wcTemp, L"%s\n\n%s" TEXT(__DATE__) L"\n\n%s", app::wcMes[IDS_ABOUT],
+                app::wcMes[IDS_BUILD], app::wcMes[IDS_COPYRIGHT]);
       util::messageBox(hWnd, app::hInst, wcTemp, app::wcMes[IDS_ABOUT_TITLE], MB_OK | MB_ICONINFORMATION);
       break;
     }
+  }
+
+  if (id >= IDC_BUTTON_0 && id <= IDC_BUTTON_9 && app::hFocused != app::hEdiOut) {  // Screen Keyboard
+    wchar_t num[2] = {(wchar_t)(L'0' + (id - IDC_BUTTON_0)), 0};
+    SendMessageW(app::hFocused, EM_REPLACESEL, 0, (WPARAM)num);
   }
 }
 
@@ -625,65 +775,60 @@ void redraw(HWND hWnd) {
   SelectObject(hMemDC, GetStockObject(BLACK_PEN));    // Sets a pen to the memory device context
   SelectObject(hMemDC, GetStockObject(BLACK_BRUSH));  // Sets a brush to the memory device context
   Rectangle(hMemDC, rect.left, rect.top, rect.right, rect.bottom);
+  rect.top = CmdBar_Height;
 
   if (app::mode == app::MODE_PF) {
     // Label background
     SelectObject(hMemDC, hPenSys);
     SelectObject(hMemDC, hBshSys);
-    Rectangle(hMemDC, 0, 0, buttonX, buttonY);
+    Rectangle(hMemDC, 0, CmdBar_Height, buttonX, CmdBar_Height + buttonY);
 
     // Label notes
     SetBkMode(hMemDC, TRANSPARENT);
     SetTextColor(hMemDC, RGB(0, 0, 0));
     SelectObject(hMemDC, hFbtn);
-
     rect.right = buttonX;
-    rect.bottom = buttonY;
+    rect.bottom = CmdBar_Height + buttonY;
     DrawTextW(hMemDC, app::wcMes[IDS_NUMBER], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
   } else {
     // Label background
     SelectObject(hMemDC, hPenSys);
     SelectObject(hMemDC, hBshSys);
-    Rectangle(hMemDC, 0, 0, buttonX, buttonY);
-    Rectangle(hMemDC, buttonX * 7 / 2, 0, buttonX * 9 / 2, buttonY);
-    Rectangle(hMemDC, 0, buttonY, buttonX, buttonY * 2);
+    Rectangle(hMemDC, 0, CmdBar_Height, buttonX, CmdBar_Height + buttonY);
+    Rectangle(hMemDC, buttonX * 7 / 2, CmdBar_Height, buttonX * 9 / 2, CmdBar_Height + buttonY);
+    Rectangle(hMemDC, 0, CmdBar_Height + buttonY, buttonX, CmdBar_Height + buttonY * 2);
 
     // Label notes
     SetBkMode(hMemDC, TRANSPARENT);
     SetTextColor(hMemDC, RGB(0, 0, 0));
     SelectObject(hMemDC, hFbtn);
-
     rect.right = buttonX;
-    rect.bottom = buttonY;
+    rect.bottom = CmdBar_Height + buttonY;
     DrawTextW(hMemDC, app::wcMes[IDS_LOWERBOUND], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
     rect.left = buttonX * 7 / 2;
     rect.right = buttonX * 9 / 2;
     DrawTextW(hMemDC, app::wcMes[IDS_UPPERBOUND], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
     rect.left = 0;
-    rect.top = buttonY;
-    rect.bottom = buttonY * 2;
+    rect.top = CmdBar_Height + buttonY;
+    rect.bottom = CmdBar_Height + buttonY * 2;
     rect.right = buttonX;
     DrawTextW(hMemDC, app::wcMes[IDS_LIMIT], -1, &rect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
   }
 
+  // Central message
   SetBkMode(hMemDC, OPAQUE);
   SetBkColor(hMemDC, RGB(255, 255, 0));
   SetTextColor(hMemDC, RGB(0, 0, 255));
   SelectObject(hMemDC, hFmes);
-
   rect.left = 0;
   rect.right = scrx;
   if (app::mode == app::MODE_PF) {
-    rect.top = buttonY;
-    rect.bottom = scry * 9 / 40;
+    rect.top = CmdBar_Height + buttonY;
+    rect.bottom = CmdBar_Height + scry * 9 / 40;
   } else {
-    rect.top = buttonY * 2;
-    rect.bottom = scry * 3 / 10;
+    rect.top = CmdBar_Height + buttonY * 2;
+    rect.bottom = CmdBar_Height + scry * 3 / 10;
   }
-
-  // Central message
   DrawTextW(hMemDC,
             app::wcMes[app::isRunning              ? IDS_RUNNING
                        : app::mode == app::MODE_PF ? IDS_PFMSG

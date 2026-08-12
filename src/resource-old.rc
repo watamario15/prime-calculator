@@ -18,12 +18,12 @@ FILETYPE        VFT_APP
     BLOCK "041104b0"
     {
       VALUE "CompanyName",      "watamario15\0"
-      VALUE "FileDescription",  "素因数分解\0"
+      VALUE "FileDescription",  "�f��������\0"
       VALUE "FileVersion",      "3\0"
       VALUE "InternalName",     "prime\0"
-      VALUE "LegalCopyright",   "© 2018-2026 watamario15\0"
+      VALUE "LegalCopyright",   "(C) 2018-2026 watamario15\0"
       VALUE "OriginalFilename", "prime.exe\0"
-      VALUE "ProductName",      "素因数分解\0"
+      VALUE "ProductName",      "�f��������\0"
       VALUE "ProductVersion",   "3\0"
     }
     BLOCK "040904b0"
@@ -32,7 +32,7 @@ FILETYPE        VFT_APP
       VALUE "FileDescription",  "Prime Calculator\0"
       VALUE "FileVersion",      "3\0"
       VALUE "InternalName",     "prime\0"
-      VALUE "LegalCopyright",   "© 2018-2026 watamario15\0"
+      VALUE "LegalCopyright",   "(C) 2018-2026 watamario15\0"
       VALUE "OriginalFilename", "prime.exe\0"
       VALUE "ProductName",      "Prime Calculator\0"
       VALUE "ProductVersion",   "3\0"
@@ -49,7 +49,7 @@ FILETYPE        VFT_APP
 // Icon
 //
 
-ResIcon ICON "app.ico"
+ResIcon ICON "app-old.ico"
 
 
 //
@@ -58,41 +58,41 @@ ResIcon ICON "app.ico"
 
 ResMenu_JA MENU
 {
-  POPUP "ファイル (&F)"
+  POPUP "�t�@�C�� (&F)"
   {
-    MENUITEM "ファイルに保存 (&S)", IDM_FILE_SAVE_AS
-    MENUITEM "終了 (&X)", IDM_FILE_EXIT
+    MENUITEM "�t�@�C���ɕۑ� (&S)", IDM_FILE_SAVE_AS
+    MENUITEM "�I�� (&X)", IDM_FILE_EXIT
   }
-  POPUP "編集 (&E)"
+  POPUP "�ҏW (&E)"
   {
-    MENUITEM "切り取り (&T)", IDM_EDIT_CUT
-    MENUITEM "コピー (&C)", IDM_EDIT_COPY
-    MENUITEM "貼り付け (&P)", IDM_EDIT_PASTE
-    MENUITEM "全選択 (&A)", IDM_EDIT_SELECT_ALL
+    MENUITEM "�؂��� (&T)", IDM_EDIT_CUT
+    MENUITEM "�R�s�[ (&C)", IDM_EDIT_COPY
+    MENUITEM "�\��t�� (&P)", IDM_EDIT_PASTE
+    MENUITEM "�S�I�� (&A)", IDM_EDIT_SELECT_ALL
   }
-  POPUP "オプション (&O)"
+  POPUP "�I�v�V���� (&O)"
   {
-    MENUITEM "素因数分解 (&F)", IDM_OPT_PF
-    MENUITEM "素数列挙・数え (&E)", IDM_OPT_PE
+    MENUITEM "�f�������� (&F)", IDM_OPT_PF
+    MENUITEM "�f���񋓁E���� (&E)", IDM_OPT_PE
     MENUITEM SEPARATOR
-    MENUITEM "個数のみ表示 (&N)", IDM_OPT_CNTONLY
-    MENUITEM "テキストファイルに出力 (&T)", IDM_OPT_OUTFILE
+    MENUITEM "���̂ݕ\�� (&N)", IDM_OPT_CNTONLY
+    MENUITEM "�e�L�X�g�t�@�C���ɏo�� (&T)", IDM_OPT_OUTFILE
     MENUITEM SEPARATOR
     POPUP "&Language"
     {
-      MENUITEM "日本語 (&J)", IDM_OPT_LANG_JA
+      MENUITEM "���{�� (&J)", IDM_OPT_LANG_JA
       MENUITEM "&English", IDM_OPT_LANG_EN
     }
-    POPUP "文字コード (&C)"
+    POPUP "�����R�[�h (&C)"
     {
       MENUITEM "&UTF-8", IDM_OPT_CHARSET_UTF8
       MENUITEM "&SHIFT_JIS", IDM_OPT_CHARSET_SJIS
     }
   }
-  POPUP "ヘルプ (&H)"
+  POPUP "�w���v (&H)"
   {
-    MENUITEM "使い方 (&U)", IDM_HELP_HOWTOUSE
-    MENUITEM "このプログラムについて (&A)", IDM_HELP_ABOUT
+    MENUITEM "�g���� (&U)", IDM_HELP_HOWTOUSE
+    MENUITEM "���̃v���O�����ɂ��� (&A)", IDM_HELP_ABOUT
   }
 }
 
@@ -120,7 +120,7 @@ ResMenu_EN MENU
     MENUITEM SEPARATOR
     POPUP "&Language"
     {
-      MENUITEM "日本語 (&J)", IDM_OPT_LANG_JA
+      MENUITEM "���{�� (&J)", IDM_OPT_LANG_JA
       MENUITEM "&English", IDM_OPT_LANG_EN
     }
     POPUP "&Charset"
@@ -152,7 +152,7 @@ ResAccel ACCELERATORS
 //
 
 #ifndef UNDER_CE
-1 RT_MANIFEST app.manifest
+1 24 app.manifest
 #endif
 
 
@@ -166,7 +166,7 @@ STRINGTABLE
   IDS_ABOUT "Prime Calculator Ver. 3\012\012\
 Performs calculations related to prime numbers, suporting natural numbers within signed 64-bit integer. This software is licensed under the MIT License."
   IDS_BUILD "Build date: "
-  IDS_COPYRIGHT "© 2018-2026 watamario15"
+  IDS_COPYRIGHT "(C) 2018-2026 watamario15"
   IDS_PFHELP "Enter a natural number in the input box and press the OK button or the Enter key to start a prime factorization (it can also usable as prime number deciding). As it takes time to process a number with a large prime factor, you can use the Abort button to cancel. Results and errors will be displayed on the box located at the center of the screen. You can switch to the Enumerate Prime Numbers feature in the options menu."
   IDS_PEHELP "Specify a range to enumerate prime numbers and a max count within, and press the OK button or the Enter key to start. Invalid or 0 will be taken as unlimited. As it takes time to process a large prime number, you can use the Abort button to cancel. Results and errors will be displayed on the box located at the center of the screen. You can configure outputs in the options menu. If ""Output to a text file"" is checked, this software writes the result on a specified text file instead of the screen (faster than screen). You can switch to the Prime Factorization feature in the options menu."
   IDS_OK "OK"
@@ -210,50 +210,50 @@ Performs calculations related to prime numbers, suporting natural numbers within
   IDS_ETHREAD_OUT "Error: Failed to create a calculation thread.\015\012"
 
   // Japanese
-  IDS_JA_APPNAME "素因数分解"
-  IDS_JA_ABOUT "素因数分解 Ver. 3\012\012\
-符号付き 64-bit 整数範囲の自然数に対して素数関連の計算を行います。このソフトウェアは MIT License でライセンスされます。"
-  IDS_JA_BUILD "ビルド日付: "
-  IDS_JA_COPYRIGHT "© 2018-2026 watamario15"
-  IDS_JA_PFHELP "画面上部の入力ボックスに自然数を入力し、OK ボタンまたは Enter で素因数分解を開始します。巨大な素因数を持つ自然数の処理には時間がかかりますが、待てない場合は中断ボタンで中断できます。結果及びエラー内容は画面中央のボックスに出力します。画面上部のメニューバーのオプションから素数列挙・数え上げの機能に切り替えられます。"
-  IDS_JA_PEHELP "素数列挙の範囲と個数上限を入力し、OK ボタンまたは Enter で処理を開始します。無効値や 0 は無制限として扱います。大きな素数の処理は時間がかかりますが、待てない場合は中断ボタンで中断できます。結果及びエラー内容は画面中央のボックスに出力します。画面上部のメニューバーのオプションから出力を調整できます。テキストファイル出力を指定すると、画面ではなく指定したテキストファイルに結果を出力します（画面より高速）。同様にオプションから素因数分解の機能に切り替えられます。"
+  IDS_JA_APPNAME "�f��������"
+  IDS_JA_ABOUT "�f�������� Ver. 3\012\012\
+�����t�� 64-bit �����͈͂̎��R���ɑ΂��đf���֘A�̌v�Z���s���܂��B���̃\�t�g�E�F�A�� MIT License �Ń��C�Z���X����܂��B"
+  IDS_JA_BUILD "�r���h���t: "
+  IDS_JA_COPYRIGHT "(C) 2018-2026 watamario15"
+  IDS_JA_PFHELP "��ʏ㕔�̓��̓{�b�N�X�Ɏ��R������͂��AOK �{�^���܂��� Enter �őf�����������J�n���܂��B����ȑf�����������R���̏����ɂ͎��Ԃ�������܂����A�҂ĂȂ��ꍇ�͒��f�{�^���Œ��f�ł��܂��B���ʋy�уG���[���e�͉�ʒ����̃{�b�N�X�ɏo�͂��܂��B��ʏ㕔�̃��j���[�o�[�̃I�v�V��������f���񋓁E�����グ�̋@�\�ɐ؂�ւ����܂��B"
+  IDS_JA_PEHELP "�f���񋓂͈̔͂ƌ��������͂��AOK �{�^���܂��� Enter �ŏ������J�n���܂��B�����l�� 0 �͖������Ƃ��Ĉ����܂��B�傫�ȑf���̏����͎��Ԃ�������܂����A�҂ĂȂ��ꍇ�͒��f�{�^���Œ��f�ł��܂��B���ʋy�уG���[���e�͉�ʒ����̃{�b�N�X�ɏo�͂��܂��B��ʏ㕔�̃��j���[�o�[�̃I�v�V��������o�͂𒲐��ł��܂��B�e�L�X�g�t�@�C���o�͂��w�肷��ƁA��ʂł͂Ȃ��w�肵���e�L�X�g�t�@�C���Ɍ��ʂ��o�͂��܂��i��ʂ�荂���j�B���l�ɃI�v�V��������f���������̋@�\�ɐ؂�ւ����܂��B"
   IDS_JA_OK "OK"
-  IDS_JA_ABORT "中断"
-  IDS_JA_CLRHST "履歴消去"
-  IDS_JA_BS "削除"
-  IDS_JA_CE "全消"
-  IDS_JA_HELP_TITLE "使い方"
-  IDS_JA_ABOUT_TITLE "このプログラムについて"
-  IDS_JA_RUNNING_TITLE "計算中...しばらくお待ち下さい..."
-  IDS_JA_SAVE_TITLE "保存先の指定"
-  IDS_JA_EOPEN "ファイルの作成またはオープンに失敗しました。書き込み禁止になっていないかを確認してください。"
-  IDS_JA_ERROR "エラー"
-  IDS_JA_FILEDONE "出力ボックスの内容をテキストファイルに書き出しました。"
-  IDS_JA_INFO "情報"
-  IDS_JA_EWRITE "出力ファイルへの書き込みに失敗しました。別のパスで再試行してください。"
-  IDS_JA_NUMBER "自然数"
-  IDS_JA_LOWERBOUND "最小値"
-  IDS_JA_UPPERBOUND "最大値"
-  IDS_JA_LIMIT "個数上限"
-  IDS_JA_RUNNING "計算中です..."
-  IDS_JA_PFMSG "素因数分解したい自然数を入力してください"
-  IDS_JA_PEMSG "素数を探す範囲と最大個数を入力してください"
-  IDS_JA_PFINVALID "無効な値です。符号付き 64-bit 整数範囲の自然数（正整数）を入力してください｡"
-  IDS_JA_PFINVALID_OUT "エラー: 無効な値（符号付き 64-bit 整数範囲の自然数のみ対応）\015\012"
-  IDS_JA_PFPRIME "（素数）"
-  IDS_JA_PFRESULT "結果: "
-  IDS_JA_PEINVALID "無効な値が入力されました｡"
-  IDS_JA_PEINVALID_OUT "エラー: 無効な値\015\012"
-  IDS_JA_OUT_TITLE "結果の出力先指定"
-  IDS_JA_EOPEN_OUT "エラー: ファイルの作成またはオープンに失敗\015\012"
-  IDS_JA_EWRITE_OUT "エラー: テキストファイル書き込み失敗\015\012"
-  IDS_JA_RUNFILE "計算結果をテキストファイルに出力しています...\015\012"
-  IDS_JA_PERESULT "合計個数: %I64d（範囲: %I64d以上%I64d以下, 個数上限: %I64d）"
-  IDS_JA_PEABORT "［中断］合計個数: %I64d以上（範囲: %I64d以上%I64d以下, 個数上限: %I64d）"
-  IDS_JA_EREGCL "RegisterClassW に失敗しました。"
-  IDS_JA_ECRTWND "CreateWindowExW に失敗しました。"
-  IDS_JA_EALLOC "メモリ確保に失敗しました。"
-  IDS_JA_ESCRBUF "画面バッファの作成に失敗しました。メモリ不足の可能性があります。"
-  IDS_JA_ETHREAD "計算スレッドの作成に失敗しました。"
-  IDS_JA_ETHREAD_OUT "エラー: 計算スレッド作成失敗\015\012"
+  IDS_JA_ABORT "���f"
+  IDS_JA_CLRHST "��������"
+  IDS_JA_BS "�폜"
+  IDS_JA_CE "�S��"
+  IDS_JA_HELP_TITLE "�g����"
+  IDS_JA_ABOUT_TITLE "���̃v���O�����ɂ���"
+  IDS_JA_RUNNING_TITLE "�v�Z��...���΂炭���҂�������..."
+  IDS_JA_SAVE_TITLE "�ۑ���̎w��"
+  IDS_JA_EOPEN "�t�@�C���̍쐬�܂��̓I�[�v���Ɏ��s���܂����B�������݋֎~�ɂȂ��Ă��Ȃ������m�F���Ă��������B"
+  IDS_JA_ERROR "�G���["
+  IDS_JA_FILEDONE "�o�̓{�b�N�X�̓��e���e�L�X�g�t�@�C���ɏ����o���܂����B"
+  IDS_JA_INFO "���"
+  IDS_JA_EWRITE "�o�̓t�@�C���ւ̏������݂Ɏ��s���܂����B�ʂ̃p�X�ōĎ��s���Ă��������B"
+  IDS_JA_NUMBER "���R��"
+  IDS_JA_LOWERBOUND "�ŏ��l"
+  IDS_JA_UPPERBOUND "�ő�l"
+  IDS_JA_LIMIT "�����"
+  IDS_JA_RUNNING "�v�Z���ł�..."
+  IDS_JA_PFMSG "�f�����������������R������͂��Ă�������"
+  IDS_JA_PEMSG "�f����T���͈͂ƍő������͂��Ă�������"
+  IDS_JA_PFINVALID "�����Ȓl�ł��B�����t�� 64-bit �����͈͂̎��R���i�������j����͂��Ă��������"
+  IDS_JA_PFINVALID_OUT "�G���[: �����Ȓl�i�����t�� 64-bit �����͈͂̎��R���̂ݑΉ��j\015\012"
+  IDS_JA_PFPRIME "�i�f���j"
+  IDS_JA_PFRESULT "����: "
+  IDS_JA_PEINVALID "�����Ȓl�����͂���܂����"
+  IDS_JA_PEINVALID_OUT "�G���[: �����Ȓl\015\012"
+  IDS_JA_OUT_TITLE "���ʂ̏o�͐�w��"
+  IDS_JA_EOPEN_OUT "�G���[: �t�@�C���̍쐬�܂��̓I�[�v���Ɏ��s\015\012"
+  IDS_JA_EWRITE_OUT "�G���[: �e�L�X�g�t�@�C���������ݎ��s\015\012"
+  IDS_JA_RUNFILE "�v�Z���ʂ��e�L�X�g�t�@�C���ɏo�͂��Ă��܂�...\015\012"
+  IDS_JA_PERESULT "���v��: %I64d�i�͈�: %I64d�ȏ�%I64d�ȉ�, �����: %I64d�j"
+  IDS_JA_PEABORT "�m���f�n���v��: %I64d�ȏ�i�͈�: %I64d�ȏ�%I64d�ȉ�, �����: %I64d�j"
+  IDS_JA_EREGCL "RegisterClassW �Ɏ��s���܂����B"
+  IDS_JA_ECRTWND "CreateWindowExW �Ɏ��s���܂����B"
+  IDS_JA_EALLOC "�������m�ۂɎ��s���܂����B"
+  IDS_JA_ESCRBUF "��ʃo�b�t�@�̍쐬�Ɏ��s���܂����B�������s���̉\��������܂��B"
+  IDS_JA_ETHREAD "�v�Z�X���b�h�̍쐬�Ɏ��s���܂����B"
+  IDS_JA_ETHREAD_OUT "�G���[: �v�Z�X���b�h�쐬���s\015\012"
 }

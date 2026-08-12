@@ -7,26 +7,17 @@
 #include "ui.hpp"
 
 namespace wproc {
-static HBRUSH BGDark = CreateSolidBrush(0x3f3936);  // Background brush for the dark theme.
-
 LRESULT CALLBACK wndProc(HWND hWnd, unsigned uMsg, WPARAM wParam, LPARAM lParam) {
   switch (uMsg) {
-    HANDLE_MSG(hWnd, WM_ACTIVATE, msg::onActivate);  // On window activation
-    HANDLE_MSG(hWnd, WM_CREATE, msg::onCreate);      // On window creation
-    HANDLE_MSG(hWnd, WM_CLOSE, msg::onClose);        // On window close
-    HANDLE_MSG(hWnd, WM_SIZE, msg::onSize);          // On window size change
-    HANDLE_MSG(hWnd, WM_PAINT, msg::onPaint);        // On window repaint request
-    HANDLE_MSG(hWnd, WM_COMMAND, msg::onCommand);    // On user interrtuption
-
-    case WM_CTLCOLOREDIT:
-      SetTextColor((HDC)wParam, 0x00ff00);
-      SetBkColor((HDC)wParam, 0x3f3936);
-      return (LRESULT)BGDark;
-
-    case WM_CTLCOLORSTATIC:
-      SetTextColor((HDC)wParam, 0x00ff00);
-      SetBkColor((HDC)wParam, 0x3f3936);
-      return (LRESULT)BGDark;
+    HANDLE_MSG(hWnd, WM_ACTIVATE, msg::onActivate);        // On window activation
+    HANDLE_MSG(hWnd, WM_CREATE, msg::onCreate);            // On window creation
+    HANDLE_MSG(hWnd, WM_CLOSE, msg::onClose);              // On window close
+    HANDLE_MSG(hWnd, WM_SIZE, msg::onSize);                // On window size change
+    HANDLE_MSG(hWnd, WM_PAINT, msg::onPaint);              // On window repaint request
+    HANDLE_MSG(hWnd, WM_COMMAND, msg::onCommand);          // On user interrtuption
+    HANDLE_MSG(hWnd, WM_CTLCOLOREDIT, msg::onCtlColor);    // Color for enabled edit controls
+    HANDLE_MSG(hWnd, WM_CTLCOLORSTATIC, msg::onCtlColor);  // Color for disabled edit controls
+    HANDLE_MSG(hWnd, WM_DESTROY, msg::onDestroy);          // On application exit
 
 #ifndef UNDER_CE
     case 0x02e0:  // On DPI change (WM_DPICHANGED)
@@ -34,11 +25,6 @@ LRESULT CALLBACK wndProc(HWND hWnd, unsigned uMsg, WPARAM wParam, LPARAM lParam)
                  ((RECT *)lParam)->bottom - ((RECT *)lParam)->top, FALSE);
       return 0;
 #endif
-
-    case WM_DESTROY:
-      DeleteObject(BGDark);
-      PostQuitMessage(0);
-      return 0;
 
     case WM_APP_THREADEND: {  // On runner thread exit (user defined message)
       DWORD exitCode;
@@ -85,8 +71,15 @@ LRESULT CALLBACK wndProc(HWND hWnd, unsigned uMsg, WPARAM wParam, LPARAM lParam)
       SendMessageW(app::hEdi0, EM_SETREADONLY, (WPARAM)FALSE, (LPARAM)NULL);
       EnableWindow(app::hBtnAbort, FALSE);
       EnableMenuItem(app::hMenu, 2, MF_BYPOSITION | MF_ENABLED);  // Re-enable the "Options" menu
-      DrawMenuBar(hWnd);
-      SetFocus(app::hFocused);  // Sets a focus on the previously focused control
+#ifdef UNDER_CE
+      CommandBar_DrawMenuBar(app::hCmdBar, 1);
+#else
+      DrawMenuBar(app::hWnd);
+#endif
+      app::hFocused = app::hEdi0;
+      SetFocus(app::hEdi0);  // Move the focus from the output box to the first input box
+      EnableMenuItem(app::hMenu, IDM_EDIT_CUT, MF_BYCOMMAND | MF_ENABLED);
+      EnableMenuItem(app::hMenu, IDM_EDIT_PASTE, MF_BYCOMMAND | MF_ENABLED);
 
       app::isRunning = false;
       msg::redraw(hWnd);
@@ -107,12 +100,8 @@ LRESULT CALLBACK inputProc(HWND hWnd, unsigned uMsg, WPARAM wParam, LPARAM lPara
 
     case WM_KEYDOWN:
       if (wParam == VK_TAB) {
-          if (GetKeyState(VK_SHIFT) & 0x8000) {
-            SetFocus(props->hPrevWnd);
-          } else {
-            SetFocus(props->hNextWnd);
-          }
-          return 0;
+        SetFocus(GetKeyState(VK_SHIFT) & 0x8000 ? props->hPrevWnd : props->hNextWnd);
+        return 0;
       }
       break;
 

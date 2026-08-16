@@ -1,4 +1,4 @@
-# 素因数分解
+# Prime Calculator
 
 [English](README.md) / **日本語**
 
@@ -28,9 +28,9 @@ SHARP Brain への導入方法は [Brain Wiki](https://brain.fandom.com/ja/wiki/
 
 起動すると素因数分解モードになります。素因数分解したい数を画面上部の入力ボックスに入力し、OK か Enter キーを押すと計算を開始します。
 
-メニューバーのオプションから素数列挙・数え上げの機能に切り替えられます。探す範囲と上限の個数を指定し、OK または Enter キーを押すと計算を開始します。空欄は無制限として扱われます。出力ボックスには 65,535 文字の字数上限があるのでテキストファイル出力も可能です（画面より高速）。
+メニューバーのオプションから素数列挙・数え上げの機能に切り替えられます。探す範囲と個数上限を指定し、OK または Enter キーを押すと計算を開始します。空欄は無制限として扱われます。出力ボックスには 65,535 文字の字数上限があるのでテキストファイル出力も可能です（画面より高速）。
 
-「ファイル」から出力ボックスの内容をテキストファイルに書き出したり、クリップボードにコピーしたりできます。表示言語はオプションの Language で切り替えます。数字キーがないデバイスでも、画面上のボタンやキーボードの QWERTY 列（アルファベット入力状態のままで OK）で数値入力できます。
+「ファイル」から出力ボックスの内容をテキストファイルに書き出せます。表示言語はオプションの Language で切り替えます。数字キーがないデバイスでも、画面上のボタンやキーボードの QWERTY 列（アルファベット入力状態のままで OK）で数値入力できます。
 
 ## ビルド
 
@@ -46,7 +46,7 @@ SHARP Brain への導入方法は [Brain Wiki](https://brain.fandom.com/ja/wiki/
   - [CeGCC (GCC 9)](https://github.com/brain-hackers/cegcc-build/releases) に PATH が通っている必要があります
   - 環境変数 `PREFIX` を設定し、別のツールチェーンを使うことも可能です
 - [Pocket GCC 1.50](https://ux.getuploader.com/brainup2ch/download/37) via [`src/pgcc.bat`](src/pgcc.bat)
-  - Windows CE 端末に [Brain Wiki](https://brain.fandom.com/ja/wiki/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3%83%B3%E3%82%B0) 等を参考に PocketGCC 1.50 と DOS窓Open を導入し、[`src/pgcc.bat`](src/pgcc.bat) でビルドしてください
+  - Windows CE 端末に [Brain Wiki](https://brain.fandom.com/ja/wiki/%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%9F%E3%83%B3%E3%82%B0) 等を参考に PocketGCC 1.50 と DOS 窓 Open を導入し、[`src/pgcc.bat`](src/pgcc.bat) でビルドしてください
   - `src` フォルダだけ転送し、適宜バッチファイル冒頭のパスを書き換えれば OK です
   - eMbedded Visual C++ 4.0 の Standard SDK 等からコピーした `commctrl.lib` をリンカに読み込ませる必要があります（大量の警告が出ますが問題ありません）
 
@@ -64,7 +64,7 @@ src/
 │
 └─ resource*.rc / resource.h : Resource
     ├─ app*.ico : Application icon
-    └─ app.manifest : Application manifest
+    └─ app.manifest : Application manifest for desktop platforms
 ```
 
 ## 利用許諾条件（ライセンス）

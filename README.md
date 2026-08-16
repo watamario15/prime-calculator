@@ -26,11 +26,11 @@ Read [Brain Wiki](https://brain.fandom.com/ja/wiki/%E3%82%A2%E3%83%97%E3%83%AA%E
 
 Download an appropriate one from [Releases](../../releases) and run it on your device. No installation needed. You can also uninstall this software just by removing the executable file itself, as it doesn't touch the system registry or such.
 
-You will first see the "Prime Factorization" mode. Enter a natural number in the input box and press the OK button or the Enter key, to get the result.
+You will first see the "Prime Factorization" mode. Enter a natural number in the input box and press the OK button or the Enter key, to start a calculation.
 
 You can switch to the "Enumerate Prime Numbers" mode in the Options menu. Specify a range to enumerate prime numbers and a max count within, and press the OK button or the Enter key to start. Text file output is also available as the output box can only hold up to 65,535 characters (faster than screen).
 
-You can use the File menu to export the contents in the output box to a text file or copy it to the clipboard. Also, you can use the top row (QWERTY...) keys to input numbers if your device does not have number keys.
+You can use the File menu to export the content of the output box to a text file, and you can use the top row (QWERTY...) keys to input numbers if your device does not have number keys.
 
 ## How to Build
 
@@ -64,7 +64,7 @@ src/
 │
 └─ resource*.rc / resource.h : Resource
     ├─ app*.ico : Application icon
-    └─ app.manifest : Application manifest
+    └─ app.manifest : Application manifest for desktop platforms
 ```
 
 ## License

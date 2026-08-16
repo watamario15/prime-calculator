@@ -273,10 +273,10 @@ void onSize(HWND hWnd, unsigned state, int cx, int cy) {
   hFbtn = CreateFontIndirectW(&rLogfont);
 
   // Font for the output box
-  if (16 * scrx / 700 < 16 * scry / 400) {
-    rLogfont.lfHeight = 16 * scrx / 700;
+  if (20 * scrx / 700 < 20 * scry / 400) {
+    rLogfont.lfHeight = 20 * scrx / 700;
   } else {
-    rLogfont.lfHeight = 16 * scry / 400;
+    rLogfont.lfHeight = 20 * scry / 400;
   }
   if (rLogfont.lfHeight < 12) rLogfont.lfHeight = 12;
   rLogfont.lfWidth = 0;

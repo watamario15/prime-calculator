@@ -75,7 +75,7 @@ ResMenu_JA MENU
     POPUP "文字コード (&C)"
     {
       MENUITEM "&UTF-8", IDM_OPT_CHARSET_UTF8
-      MENUITEM "&SHIFT_JIS", IDM_OPT_CHARSET_SJIS
+      MENUITEM "&Shift_JIS (CP932)", IDM_OPT_CHARSET_SJIS
     }
   }
   POPUP "ヘルプ (&H)"
@@ -115,7 +115,7 @@ ResMenu_EN MENU
     POPUP "&Charset"
     {
       MENUITEM "&UTF-8", IDM_OPT_CHARSET_UTF8
-      MENUITEM "&SHIFT_JIS", IDM_OPT_CHARSET_SJIS
+      MENUITEM "&Shift_JIS (CP932)", IDM_OPT_CHARSET_SJIS
     }
   }
   POPUP "&Help"
@@ -190,8 +190,8 @@ Performs calculations related to prime numbers, suporting natural numbers within
   IDS_ETHREAD_OUT "Error: Failed to create a calculation thread.\015\012"
 
   // Japanese
-  IDS_JA_APPNAME "素因数分解"
-  IDS_JA_ABOUT "素因数分解 Ver. 3\012\012\
+  IDS_JA_APPNAME "Prime Calculator"
+  IDS_JA_ABOUT "Prime Calculator Ver. 3\012\012\
 符号付き 64-bit 整数範囲の自然数に対して素数関連の計算を行います。このソ\フトウェアは MIT License でライセンスされます。"
   IDS_JA_BUILD "ビルド日付: "
   IDS_JA_COPYRIGHT "(C) 2018-2026 watamario15"
@@ -217,7 +217,7 @@ Performs calculations related to prime numbers, suporting natural numbers within
   IDS_JA_LIMIT "個数上限"
   IDS_JA_RUNNING "計算中です..."
   IDS_JA_PFMSG "素因数分解したい自然数を入力してください"
-  IDS_JA_PEMSG "素数を探す範囲と最大個数を入力してください"
+  IDS_JA_PEMSG "素数を探す範囲と個数上限を入力してください"
   IDS_JA_PFINVALID "無効な値です。符号付き 64-bit 整数範囲の自然数（正整数）を入力してください｡"
   IDS_JA_PFINVALID_OUT "エラー: 無効な値（符号付き 64-bit 整数範囲の自然数のみ対応）\015\012"
   IDS_JA_PFPRIME "（素数）"
